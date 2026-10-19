@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotbollssidan – Lag</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- HEADER: samma på alla sidor -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">Fotbollssidan</a>
+      <nav class="nav">
+        <a href="index.html">Hem</a>
+        <a href="matcher.html">Matcher</a>
+        <a href="lag.html">Lag</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <h1>Lag</h1>
+
+    <section class="sektion">
+      <h2>Alla lag</h2>
+      <!-- Senare fyller JavaScript den här rutnätet med lag från API:et -->
+      <div id="lag-lista" class="rutnat">
+        <div class="kort">Lag A</div>
+        <div class="kort">Lag B</div>
+        <div class="kort">Lag C</div>
+        <div class="kort">Lag D</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER: samma på alla sidor -->
+  <footer class="footer">
+    <p>© <span id="ar">2026</span> Fotbollssidan – ett gymnasiearbete</p>
+    <p class="footer-liten">Data från vårt valda API.</p>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

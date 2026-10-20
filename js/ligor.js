@@ -31,11 +31,28 @@ function visaLigalista(huvudkort) {
   const lista = skapa("div", "liga-lista");
 
   LIGOR.forEach(function (liga) {
-    const kort = skapa("a", "liga-kort");
-    kort.href = "ligor.html?liga=" + liga.kod;
-    kort.appendChild(skapaLogga("https://crests.football-data.org/" + liga.kod + ".png"));
-    kort.appendChild(skapa("div", "liga-namn", liga.namn));
-    kort.appendChild(skapa("div", "liga-land", liga.land));
+    const kort = skapa("div", "liga-kort");
+    kort.setAttribute("role", "button");
+    kort.tabIndex = 0;   // så att man kan välja kortet med tangentbordet också
+
+    const loggruta = skapa("div", "liga-logga");
+    loggruta.appendChild(skapaLogga("https://crests.football-data.org/" + liga.kod + ".png"));
+    kort.appendChild(loggruta);
+
+    const text = skapa("div");
+    text.appendChild(skapa("div", "liga-namn", liga.namn));
+    text.appendChild(skapa("div", "liga-land", liga.land));
+    kort.appendChild(text);
+
+    // Ett klick (eller Enter) skickar en direkt vidare till ligans tabell
+    function oppna() {
+      window.location.href = "ligor.html?liga=" + liga.kod;
+    }
+    kort.addEventListener("click", oppna);
+    kort.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") oppna();
+    });
+
     lista.appendChild(kort);
   });
 

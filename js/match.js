@@ -73,42 +73,23 @@ function byggHuvud(match) {
   return huvud;
 }
 
-// Spelarens efternamn, t.ex. "M. Salah" -> "Salah"
-function kortNamn(namn) {
-  const delar = namn.split(" ");
-  return delar.length > 1 ? delar.slice(1).join(" ") : namn;
-}
-
-// Delar upp startelvan i rader (målvakt, backar, mittfält, anfall) med hjälp av
-// "ruta" (t.ex. "2:3" = rad 2, plats 3). Saknas rutan används positionen.
-function raderFor(lag) {
-  const radNummer = { G: 1, D: 2, M: 3, F: 4 };
-  const rader = {};
-  lag.startelva.forEach(function (spelare, i) {
-    const delar = spelare.ruta ? spelare.ruta.split(":").map(Number) : [radNummer[spelare.position] || 3, i];
-    if (!rader[delar[0]]) rader[delar[0]] = [];
-    rader[delar[0]].push({ spelare: spelare, plats: delar[1] });
-  });
-  return Object.keys(rader).map(Number).sort(function (a, b) { return a - b; }).map(function (nr) {
-    return rader[nr].sort(function (a, b) { return a.plats - b.plats; }).map(function (r) { return r.spelare; });
-  });
-}
-
 // En planhalva. Hemmalaget har målvakten längst ner, bortalaget längst upp.
+// "lag.rader" kommer färdiga från mellanhanden: målvakten först, sedan bakifrån
+// och framåt, och varje rad från lagets vänsterkant till högerkant.
 function byggPlanhalva(lag, arHemma) {
   const halva = skapa("div", "ma-halva" + (arHemma ? " hemma" : " borta"));
   if (!lag) {
     halva.appendChild(skapa("div", "ma-saknas", "Ingen uppställning hittades"));
     return halva;
   }
-  raderFor(lag).forEach(function (rad) {
+  lag.rader.forEach(function (rad) {
     const radElement = skapa("div", "ma-rad");
     // Bortalaget står vänt mot hemmalaget, så deras vänsterkant är vår högerkant
     (arHemma ? rad : rad.slice().reverse()).forEach(function (spelare) {
       const ruta = skapa("div", "ma-spelare");
       ruta.title = spelare.namn;
       ruta.appendChild(skapa("div", "ma-nummer", spelare.nummer));
-      ruta.appendChild(skapa("div", "ma-namn", kortNamn(spelare.namn)));
+      ruta.appendChild(skapa("div", "ma-namn", spelare.efternamn));
       radElement.appendChild(ruta);
     });
     halva.appendChild(radElement);

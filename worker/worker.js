@@ -85,31 +85,28 @@ async function hamtaNyheter() {
 }
 
 // ============================================
-// LAGUPPSTÄLLNINGAR (från API-Football)
+// LAGUPPSTÄLLNINGAR (från ESPN)
 // football-data.org har inga uppställningar i gratisnivån, så vi hämtar dem
-// från API-Football. Nyckeln sparas som hemlighet (API_FOOTBALL_NYCKEL) hos Cloudflare.
+// från ESPN:s öppna API. Det behöver ingen nyckel.
 // ============================================
 
-const AF_BAS_URL = "https://v3.football.api-sports.io";
+const ESPN_BAS_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer";
 
-// Turneringskoder hos football-data och motsvarande liga-id hos API-Football
-const AF_LIGOR = { PL: 39, PD: 140, BL1: 78, SA: 135, FL1: 61, CL: 2 };
+// Turneringskoder hos football-data och motsvarande liga hos ESPN
+const ESPN_LIGOR = { PL: "eng.1", PD: "esp.1", BL1: "ger.1", SA: "ita.1", FL1: "fra.1", CL: "uefa.champions" };
 
 // Ta bort mellanslag och citattecken om de råkat följa med när en nyckel klistrades in
 function rensaNyckel(nyckel) {
   return nyckel.trim().replace(/^["']|["';]+$/g, "");
 }
 
-async function hamtaAf(vag, nyckel) {
-  const svar = await fetch(AF_BAS_URL + vag, { headers: { "x-apisports-key": nyckel } });
-  const data = await svar.json();
-  // API-Football svarar med status 200 även vid fel, felen ligger i "errors"
-  const fel = data.errors && Object.keys(data.errors).length > 0;
-  if (fel) throw new Error("API-Football: " + JSON.stringify(data.errors));
-  return data.response;
+async function hamtaEspn(vag) {
+  const svar = await fetch(ESPN_BAS_URL + vag, { headers: { "User-Agent": "Mozilla/5.0 Fotbollshemsida" } });
+  if (!svar.ok) throw new Error("ESPN svarade med " + svar.status);
+  return svar.json();
 }
 
-// Lagnamn skrivs olika i de två API:erna ("FC Bayern München" / "Bayern München"),
+// Lagnamn skrivs olika i de två API:erna ("FC Bayern München" / "Bayern Munich"),
 // så vi tar bort accenter, "FC" och liknande innan vi jämför
 function normalisera(namn) {
   return (namn || "")
@@ -131,35 +128,90 @@ function liknar(a, b) {
   return na.split(" ").some(function (ord) { return ord.length >= 4 && ordB.includes(ord); });
 }
 
-function liknarLag(afNamn, fdLag) {
-  return liknar(afNamn, fdLag.shortName) || liknar(afNamn, fdLag.name);
+function liknarLag(espnNamn, fdLag) {
+  return liknar(espnNamn, fdLag.shortName) || liknar(espnNamn, fdLag.name);
 }
 
-// Gör om API-Footballs uppställning till ett enklare format för hemsidan
-function forenkla(uppstallning) {
-  function spelare(rad) {
+// Hur långt fram på planen en position står (0 = målvakt, 5 = anfall).
+// ESPN skriver t.ex. "CD-L" (vänster mittback) eller "AM" (offensiv mittfältare).
+const DJUP = {
+  G: 0, CD: 1, CB: 1, LB: 1, RB: 1, SW: 1.5, DM: 2, LWB: 2.5, RWB: 2.5,
+  CM: 3, LM: 3, RM: 3, M: 3, AM: 4, LW: 4.5, RW: 4.5, CF: 5, LF: 5, RF: 5, F: 5.1, ST: 5.1
+};
+
+function djup(position) {
+  const bas = position.replace(/-[LR]$/, "");
+  return bas in DJUP ? DJUP[bas] : 3;
+}
+
+// Hur långt åt vänster (0) eller höger (2) en position står, sett från laget
+function sida(position) {
+  if (position.endsWith("-L")) return 0.5;
+  if (position.endsWith("-R")) return 1.5;
+  if (position.startsWith("L")) return 0;
+  if (position.startsWith("R")) return 2;
+  return 1;
+}
+
+// Gör om ESPN:s trupp till rader på planen. Startelvan sorteras bakifrån och
+// delas upp enligt formationen: "4-2-3-1" ger raderna 1 (målvakt), 4, 2, 3 och 1.
+function forenkla(lag) {
+  const spelare = (lag.roster || []).map(function (p) {
     return {
-      namn: rad.player.name,
-      nummer: rad.player.number,
-      position: rad.player.pos,   // G, D, M eller F
-      ruta: rad.player.grid       // t.ex. "2:3" = rad 2, plats 3 (räknat från målvakten)
+      namn: p.athlete.displayName,
+      efternamn: p.athlete.lastName || p.athlete.displayName,
+      nummer: p.jersey,
+      position: (p.position && p.position.abbreviation) || "",
+      startar: p.starter
     };
+  });
+  const startelva = spelare.filter(function (s) { return s.startar; })
+    .sort(function (a, b) { return djup(a.position) - djup(b.position); });
+  if (startelva.length !== 11) return null;
+
+  let storlekar = [1].concat((lag.formation || "").split("-").map(Number));
+  const summa = storlekar.reduce(function (a, b) { return a + b; }, 0);
+  if (summa !== 11) {
+    // Ingen formation: en rad per "djup" i stället
+    storlekar = [];
+    startelva.forEach(function (s, i) {
+      if (i === 0 || djup(s.position) !== djup(startelva[i - 1].position)) storlekar.push(0);
+      storlekar[storlekar.length - 1]++;
+    });
   }
+
+  const rader = [];
+  let start = 0;
+  storlekar.forEach(function (antal) {
+    rader.push(startelva.slice(start, start + antal)
+      .sort(function (a, b) { return sida(a.position) - sida(b.position); }));
+    start += antal;
+  });
+
   return {
-    lag: uppstallning.team.name,
-    formation: uppstallning.formation,
-    startelva: uppstallning.startXI.map(spelare),
-    avbytare: uppstallning.substitutes.map(spelare)
+    formation: lag.formation || "",
+    rader: rader,
+    avbytare: spelare.filter(function (s) { return !s.startar; })
   };
+}
+
+// Lagets startelva från dess senaste match före "fore" (används som förväntad startelva)
+async function forraStartelvan(sammanfattning, lagId, fore) {
+  const lag = (sammanfattning.lastFiveGames || []).find(function (l) { return l.team.id === lagId; });
+  if (!lag) return null;
+  const tidigare = (lag.events || [])
+    .filter(function (e) { return e.gameDate < fore; })
+    .sort(function (a, b) { return b.gameDate.localeCompare(a.gameDate); });
+  if (tidigare.length === 0) return null;
+
+  // "all" fungerar för matcher i alla ligor, t.ex. en ligamatch före en CL-match
+  const forra = await hamtaEspn("/all/summary?event=" + tidigare[0].id);
+  const trupp = (forra.rosters || []).find(function (r) { return r.team.id === lagId; });
+  return trupp ? forenkla(trupp) : null;
 }
 
 // Svarar med { typ: "riktig" | "forvantad" | "saknas", lag: [hemma, borta] }
 async function hamtaUppstallning(matchId, env) {
-  if (!env.API_FOOTBALL_NYCKEL) {
-    return { typ: "saknas", orsak: "API_FOOTBALL_NYCKEL saknas i Cloudflare" };
-  }
-  const afNyckel = rensaNyckel(env.API_FOOTBALL_NYCKEL);
-
   // 1. Hämta matchen från football-data för att veta lag, datum och turnering
   const fdSvar = await fetch(API_BAS_URL + "/matches/" + matchId, {
     headers: { "X-Auth-Token": rensaNyckel(env.API_NYCKEL || "") }
@@ -167,42 +219,43 @@ async function hamtaUppstallning(matchId, env) {
   if (!fdSvar.ok) throw new Error("football-data svarade med " + fdSvar.status);
   const match = await fdSvar.json();
 
-  const liga = AF_LIGOR[match.competition.code];
-  if (!liga) return { typ: "saknas", orsak: "Turneringen finns inte hos API-Football" };
-  const sasong = Number(match.season.startDate.slice(0, 4));
-  const dag = match.utcDate.slice(0, 10);
+  const liga = ESPN_LIGOR[match.competition.code];
+  if (!liga) return { typ: "saknas", orsak: "Turneringen finns inte hos ESPN" };
 
-  // 2. Leta upp samma match hos API-Football (samma dag, samma lag)
-  const matcher = await hamtaAf("/fixtures?league=" + liga + "&season=" + sasong + "&date=" + dag, afNyckel);
+  // 2. Leta upp samma match hos ESPN (samma dag, samma lag)
+  const dag = match.utcDate.slice(0, 10).replace(/-/g, "");
+  const tavlan = await hamtaEspn("/" + liga + "/scoreboard?dates=" + dag);
   let bast = null;
   let bastPoang = 0;
-  matcher.forEach(function (m) {
-    const poang = (liknarLag(m.teams.home.name, match.homeTeam) ? 1 : 0) +
-      (liknarLag(m.teams.away.name, match.awayTeam) ? 1 : 0);
+  (tavlan.events || []).forEach(function (e) {
+    const lagen = e.competitions[0].competitors;
+    const hemma = lagen.find(function (l) { return l.homeAway === "home"; });
+    const borta = lagen.find(function (l) { return l.homeAway === "away"; });
+    const poang = (liknarLag(hemma.team.displayName, match.homeTeam) ? 1 : 0) +
+      (liknarLag(borta.team.displayName, match.awayTeam) ? 1 : 0);
     if (poang > bastPoang) {
-      bast = m;
+      bast = { id: e.id, hemmaId: hemma.team.id, bortaId: borta.team.id };
       bastPoang = poang;
     }
   });
-  if (!bast) return { typ: "saknas", orsak: "Hittade inte matchen hos API-Football" };
+  if (!bast) return { typ: "saknas", orsak: "Hittade inte matchen hos ESPN" };
 
   // 3. Är startelvorna släppta? (brukar ske ungefär en timme före avspark)
-  const riktig = await hamtaAf("/fixtures/lineups?fixture=" + bast.fixture.id, afNyckel);
-  if (riktig.length === 2) {
-    return { typ: "riktig", lag: riktig.map(forenkla), klar: match.status === "FINISHED" };
+  const sammanfattning = await hamtaEspn("/" + liga + "/summary?event=" + bast.id);
+  const trupper = sammanfattning.rosters || [];
+  const hemmaTrupp = trupper.find(function (r) { return r.homeAway === "home"; });
+  const bortaTrupp = trupper.find(function (r) { return r.homeAway === "away"; });
+  const riktig = [hemmaTrupp ? forenkla(hemmaTrupp) : null, bortaTrupp ? forenkla(bortaTrupp) : null];
+  if (riktig[0] && riktig[1]) {
+    return { typ: "riktig", lag: riktig, klar: match.status === "FINISHED" };
   }
 
   // 4. Annars: varje lags startelva från deras förra match
-  const lag = [];
-  for (const ettLag of [bast.teams.home, bast.teams.away]) {
-    const forra = await hamtaAf("/fixtures?team=" + ettLag.id + "&last=1", afNyckel);
-    if (forra.length === 0) {
-      lag.push(null);
-      continue;
-    }
-    const uppstallning = await hamtaAf("/fixtures/lineups?fixture=" + forra[0].fixture.id + "&team=" + ettLag.id, afNyckel);
-    lag.push(uppstallning.length > 0 ? forenkla(uppstallning[0]) : null);
-  }
+  const lag = await Promise.all([
+    forraStartelvan(sammanfattning, bast.hemmaId, match.utcDate),
+    forraStartelvan(sammanfattning, bast.bortaId, match.utcDate)
+  ]);
+  if (!lag[0] && !lag[1]) return { typ: "saknas", orsak: "Inga tidigare startelvor hittades" };
   return { typ: "forvantad", lag: lag };
 }
 
@@ -250,7 +303,7 @@ export default {
     }
 
     // /uppstallning?id=123 ger laguppställningarna för en match.
-    // Färdiga matcher sparas ett dygn, annars 10 minuter (API-Football tillåter bara 100 anrop/dag).
+    // Färdiga matcher sparas ett dygn, annars 10 minuter.
     if (url.pathname === "/uppstallning") {
       const matchId = url.searchParams.get("id") || "";
       if (!/^\d+$/.test(matchId)) {

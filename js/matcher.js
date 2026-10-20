@@ -1,4 +1,8 @@
-// Visar dagens matcher i alla ligor på matcher.html.
+// Visar dagens matcher i de fem största ligorna (och Champions League) på matcher.html.
+
+// Vilka turneringar som visas: Premier League, La Liga, Bundesliga, Serie A,
+// Ligue 1 och Champions League. Ta bort "CL" om bara ligorna ska visas.
+const TURNERINGAR = "PL,PD,BL1,SA,FL1,CL";
 
 // Hjälpfunktion: skapar ett element med en klass och en text
 function skapa(tagg, klass, text) {
@@ -66,8 +70,8 @@ async function visaMatcher() {
   const meddelande = skapa("p", "mr-meddelande", "Hämtar matcher...");
   lista.appendChild(meddelande);
 
-  // Utan datum ger /matches dagens matcher i alla ligor vår nyckel har tillgång till
-  const data = await hamtaFranApi("/matches");
+  // Utan datum ger /matches dagens matcher i de turneringar vi ber om
+  const data = await hamtaFranApi("/matches?competitions=" + TURNERINGAR);
 
   if (!data) {
     meddelande.textContent = "Kunde inte hämta matcher. Vänta en minut och ladda om sidan.";
@@ -151,7 +155,8 @@ async function visaResultat() {
   const sidokort = document.getElementById("sidokort");
   if (!sidokort) return;
 
-  const data = await hamtaFranApi("/matches?status=FINISHED&dateFrom=" + datum(-1) + "&dateTo=" + datum(1));
+  const data = await hamtaFranApi("/matches?competitions=" + TURNERINGAR +
+    "&status=FINISHED&dateFrom=" + datum(-1) + "&dateTo=" + datum(1));
 
   // Misslyckas en uppdatering behåller vi de resultat som redan visas
   if (!data && sidokort.children.length > 0) return;

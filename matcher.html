@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotbollssidan – Matcher</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="startsida">
+
+  <div class="startsida-layout">
+
+    <!-- Menyn till vänster (samma som på startsidan) -->
+        <nav class="sidomeny">
+      <a href="foljer.html">Följer</a>
+      <a href="ligor.html">Ligor</a>
+      <a href="matcher.html">Matcher</a>
+      <a href="nyheter.html">Nyheter</a>
+    </nav>
+
+    <!-- Stora kortet i mitten (här kommer matchlistan från API:et) -->
+            <main class="huvudkort" id="match-lista">
+            <h1 class="kort-rubrik">Matcher</h1>
+    </main>
+
+    <!-- Smala kortet till höger -->
+    <aside class="sidokort" id="sidokort"></aside>
+
+  </div>
+
+    <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/matcher.js"></script>
+</body>
+</html>

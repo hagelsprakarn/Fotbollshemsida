@@ -20,9 +20,10 @@ function lagnamn(lag) {
   return namn;
 }
 
-// Bygger en rad för en match
+// Bygger en rad för en match. Raden är en länk till matchens egen sida.
 function byggMatchrad(match) {
-  const rad = skapa("div", "mr-rad");
+  const rad = skapa("a", "mr-rad");
+  rad.href = "match.html?id=" + match.id;
 
   // Hemmalag
   const hemma = skapa("div", "mr-lag");
@@ -141,9 +142,10 @@ function byggResultatLag(lag, mal, forlorade) {
   return rad;
 }
 
-// En ruta för en färdig match, med "Idag" eller "Igår" överst
+// En ruta för en färdig match, med "Idag" eller "Igår" överst. Länkar till matchsidan.
 function byggResultat(match) {
-  const ruta = skapa("div", "re-match");
+  const ruta = skapa("a", "re-match");
+  ruta.href = "match.html?id=" + match.id;
   const spelad = new Date(match.utcDate).toLocaleDateString("sv-SE");
   ruta.appendChild(skapa("div", "re-dag", spelad === datum(0) ? "Idag" : "Igår"));
   ruta.appendChild(byggResultatLag(match.homeTeam, match.score.fullTime.home, match.score.winner === "AWAY_TEAM"));

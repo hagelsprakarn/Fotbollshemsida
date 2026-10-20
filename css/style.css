@@ -758,3 +758,193 @@ body.startsida {
   color: var(--farg-text-dampad);
   font-size: clamp(11px, 0.8vw, 15px);
 }
+
+/* ============================================
+   KLICKBARA MATCHER (länkar till match.html)
+   ============================================ */
+a.mr-rad,
+a.re-match {
+  display: grid;
+  color: var(--farg-text);
+  text-decoration: none;
+}
+a.re-match {
+  display: block;
+}
+a.mr-rad:hover,
+a.re-match:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================
+   MATCHSIDAN (match.html)
+   ============================================ */
+.ma-huvud {
+  padding-bottom: 1vh;
+}
+.ma-turnering {
+  margin-top: 1vh;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.ma-lagrad {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1vw;
+  margin: 2vh 2vw 0;
+}
+.ma-lag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.ma-lag img {
+  width: clamp(44px, 4vw, 80px);
+  height: clamp(44px, 4vw, 80px);
+  object-fit: contain;
+}
+.ma-lagnamn {
+  font-size: clamp(14px, 1.2vw, 22px);
+  line-height: 1.2;
+}
+.ma-mitten {
+  text-align: center;
+}
+.ma-resultat {
+  font-size: clamp(26px, 2.6vw, 50px);
+  line-height: 1.1;
+}
+.ma-status,
+.ma-fakta {
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+.ma-fakta {
+  margin-top: 1.5vh;
+  text-align: center;
+}
+.ma-forklaring {
+  margin: 0 2vw 1vh;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+.ma-uppstallning {
+  padding-bottom: 3vh;
+}
+.ma-uppstallning .mr-dag {
+  text-align: center;
+  text-transform: none;
+}
+.ma-formation {
+  margin: 0.8vh 2vw;
+  text-align: center;
+  font-size: clamp(12px, 0.9vw, 17px);
+  white-space: pre;
+}
+
+/* Fotbollsplanen: grön med ränder, mittlinje och mittcirkel */
+.ma-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0 2vw;
+  aspect-ratio: 3 / 4;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  background: repeating-linear-gradient(#2f8f46 0, #2f8f46 10%, #2a8340 10%, #2a8340 20%);
+  overflow: hidden;
+}
+.ma-plan::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 2px solid rgba(255, 255, 255, 0.5);
+}
+.ma-plan::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+}
+.ma-halva {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 1.5vh 0;
+}
+/* Hemmalaget har målvakten längst ner */
+.ma-halva.hemma {
+  flex-direction: column-reverse;
+}
+.ma-rad {
+  display: flex;
+  justify-content: space-around;
+}
+.ma-spelare {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20%;
+  min-width: 0;
+}
+.ma-nummer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(24px, 2vw, 38px);
+  height: clamp(24px, 2vw, 38px);
+  border-radius: 50%;
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+.ma-halva.hemma .ma-nummer {
+  background-color: var(--farg-yta);
+  border: 2px solid #ffffff;
+}
+.ma-halva.borta .ma-nummer {
+  background-color: #ffffff;
+  color: var(--farg-yta);
+  border: 2px solid var(--farg-yta);
+}
+.ma-namn {
+  max-width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(10px, 0.7vw, 14px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.ma-saknas {
+  margin: auto;
+  color: #ffffff;
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+
+/* Avbytare i högra rutan */
+.ma-avbytare {
+  display: flex;
+  gap: 8px;
+  margin: 0 0.8vw 0.4vh;
+  font-size: clamp(10px, 0.75vw, 14px);
+}
+.ma-avbytare-nr {
+  flex-shrink: 0;
+  width: 2em;
+  text-align: right;
+  color: var(--farg-text-dampad);
+}

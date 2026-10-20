@@ -84,6 +84,128 @@ async function hamtaNyheter() {
     .slice(0, 40);
 }
 
+// ============================================
+// LAGUPPSTÄLLNINGAR (från API-Football)
+// football-data.org har inga uppställningar i gratisnivån, så vi hämtar dem
+// från API-Football. Nyckeln sparas som hemlighet (API_FOOTBALL_NYCKEL) hos Cloudflare.
+// ============================================
+
+const AF_BAS_URL = "https://v3.football.api-sports.io";
+
+// Turneringskoder hos football-data och motsvarande liga-id hos API-Football
+const AF_LIGOR = { PL: 39, PD: 140, BL1: 78, SA: 135, FL1: 61, CL: 2 };
+
+// Ta bort mellanslag och citattecken om de råkat följa med när en nyckel klistrades in
+function rensaNyckel(nyckel) {
+  return nyckel.trim().replace(/^["']|["';]+$/g, "");
+}
+
+async function hamtaAf(vag, nyckel) {
+  const svar = await fetch(AF_BAS_URL + vag, { headers: { "x-apisports-key": nyckel } });
+  const data = await svar.json();
+  // API-Football svarar med status 200 även vid fel, felen ligger i "errors"
+  const fel = data.errors && Object.keys(data.errors).length > 0;
+  if (fel) throw new Error("API-Football: " + JSON.stringify(data.errors));
+  return data.response;
+}
+
+// Lagnamn skrivs olika i de två API:erna ("FC Bayern München" / "Bayern München"),
+// så vi tar bort accenter, "FC" och liknande innan vi jämför
+function normalisera(namn) {
+  return (namn || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\b(fc|cf|afc|ac|as|ssc|sc|sv|vfb|vfl|tsg|rc|rcd|ud|cd|fk|club|de|calcio)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function liknar(a, b) {
+  const na = normalisera(a);
+  const nb = normalisera(b);
+  if (!na || !nb) return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  // Annars räcker det att ett längre ord finns i båda namnen, t.ex. "Dortmund"
+  const ordB = nb.split(" ");
+  return na.split(" ").some(function (ord) { return ord.length >= 4 && ordB.includes(ord); });
+}
+
+function liknarLag(afNamn, fdLag) {
+  return liknar(afNamn, fdLag.shortName) || liknar(afNamn, fdLag.name);
+}
+
+// Gör om API-Footballs uppställning till ett enklare format för hemsidan
+function forenkla(uppstallning) {
+  function spelare(rad) {
+    return {
+      namn: rad.player.name,
+      nummer: rad.player.number,
+      position: rad.player.pos,   // G, D, M eller F
+      ruta: rad.player.grid       // t.ex. "2:3" = rad 2, plats 3 (räknat från målvakten)
+    };
+  }
+  return {
+    lag: uppstallning.team.name,
+    formation: uppstallning.formation,
+    startelva: uppstallning.startXI.map(spelare),
+    avbytare: uppstallning.substitutes.map(spelare)
+  };
+}
+
+// Svarar med { typ: "riktig" | "forvantad" | "saknas", lag: [hemma, borta] }
+async function hamtaUppstallning(matchId, env) {
+  if (!env.API_FOOTBALL_NYCKEL) {
+    return { typ: "saknas", orsak: "API_FOOTBALL_NYCKEL saknas i Cloudflare" };
+  }
+  const afNyckel = rensaNyckel(env.API_FOOTBALL_NYCKEL);
+
+  // 1. Hämta matchen från football-data för att veta lag, datum och turnering
+  const fdSvar = await fetch(API_BAS_URL + "/matches/" + matchId, {
+    headers: { "X-Auth-Token": rensaNyckel(env.API_NYCKEL || "") }
+  });
+  if (!fdSvar.ok) throw new Error("football-data svarade med " + fdSvar.status);
+  const match = await fdSvar.json();
+
+  const liga = AF_LIGOR[match.competition.code];
+  if (!liga) return { typ: "saknas", orsak: "Turneringen finns inte hos API-Football" };
+  const sasong = Number(match.season.startDate.slice(0, 4));
+  const dag = match.utcDate.slice(0, 10);
+
+  // 2. Leta upp samma match hos API-Football (samma dag, samma lag)
+  const matcher = await hamtaAf("/fixtures?league=" + liga + "&season=" + sasong + "&date=" + dag, afNyckel);
+  let bast = null;
+  let bastPoang = 0;
+  matcher.forEach(function (m) {
+    const poang = (liknarLag(m.teams.home.name, match.homeTeam) ? 1 : 0) +
+      (liknarLag(m.teams.away.name, match.awayTeam) ? 1 : 0);
+    if (poang > bastPoang) {
+      bast = m;
+      bastPoang = poang;
+    }
+  });
+  if (!bast) return { typ: "saknas", orsak: "Hittade inte matchen hos API-Football" };
+
+  // 3. Är startelvorna släppta? (brukar ske ungefär en timme före avspark)
+  const riktig = await hamtaAf("/fixtures/lineups?fixture=" + bast.fixture.id, afNyckel);
+  if (riktig.length === 2) {
+    return { typ: "riktig", lag: riktig.map(forenkla), klar: match.status === "FINISHED" };
+  }
+
+  // 4. Annars: varje lags startelva från deras förra match
+  const lag = [];
+  for (const ettLag of [bast.teams.home, bast.teams.away]) {
+    const forra = await hamtaAf("/fixtures?team=" + ettLag.id + "&last=1", afNyckel);
+    if (forra.length === 0) {
+      lag.push(null);
+      continue;
+    }
+    const uppstallning = await hamtaAf("/fixtures/lineups?fixture=" + forra[0].fixture.id + "&team=" + ettLag.id, afNyckel);
+    lag.push(uppstallning.length > 0 ? forenkla(uppstallning[0]) : null);
+  }
+  return { typ: "forvantad", lag: lag };
+}
+
 function corsHeaders(origin) {
   const tillaten = TILLATNA_ADRESSER.includes(origin) ? origin : TILLATNA_ADRESSER[0];
   return {
@@ -127,6 +249,39 @@ export default {
       return svar;
     }
 
+    // /uppstallning?id=123 ger laguppställningarna för en match.
+    // Färdiga matcher sparas ett dygn, annars 10 minuter (API-Football tillåter bara 100 anrop/dag).
+    if (url.pathname === "/uppstallning") {
+      const matchId = url.searchParams.get("id") || "";
+      if (!/^\d+$/.test(matchId)) {
+        return new Response("Saknar match-id", { status: 400, headers: headers });
+      }
+
+      const cacheNyckel = new Request("https://cache.lokal/uppstallning/" + matchId);
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let data;
+        try {
+          data = await hamtaUppstallning(matchId, env);
+        } catch (fel) {
+          data = { typ: "saknas", orsak: fel.message };
+        }
+        const sekunder = data.typ === "riktig" && data.klar ? 86400 : 600;
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=" + sekunder }
+        });
+        // Fel och saknade nycklar sparas inte, så att det fungerar direkt när de är fixade
+        if (data.typ !== "saknas") {
+          ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+        }
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
     // Allt annat skickas vidare till football-data, t.ex. /competitions/PL/matches?dateFrom=...
     const malAdress = API_BAS_URL + url.pathname + url.search;
 
@@ -139,8 +294,7 @@ export default {
       return new Response("API_NYCKEL saknas i Cloudflare", { status: 500, headers: headers });
     }
 
-    // Ta bort mellanslag och citattecken om de råkat följa med när nyckeln klistrades in
-    const nyckel = env.API_NYCKEL.trim().replace(/^["']|["';]+$/g, "");
+    const nyckel = rensaNyckel(env.API_NYCKEL);
 
     if (!svar) {
       svar = await fetch(malAdress, {

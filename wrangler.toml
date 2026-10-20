@@ -3,3 +3,5 @@
 name = "fotboll-api"
 main = "worker/worker.js"
 compatibility_date = "2026-10-01"
+# Behåll variabler som lagts in via Cloudflares webbsida när vi pushar
+keep_vars = true

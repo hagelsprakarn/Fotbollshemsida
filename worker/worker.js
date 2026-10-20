@@ -44,9 +44,16 @@ export default {
     const cacheNyckel = new Request(malAdress);
     let svar = await cache.match(cacheNyckel);
 
+    if (!env.API_NYCKEL) {
+      return new Response("API_NYCKEL saknas i Cloudflare", { status: 500, headers: headers });
+    }
+
+    // Ta bort mellanslag och citattecken om de råkat följa med när nyckeln klistrades in
+    const nyckel = env.API_NYCKEL.trim().replace(/^["']|["';]+$/g, "");
+
     if (!svar) {
       svar = await fetch(malAdress, {
-        headers: { "X-Auth-Token": env.API_NYCKEL }
+        headers: { "X-Auth-Token": nyckel }
       });
       svar = new Response(svar.body, svar);
       svar.headers.set("Cache-Control", "public, max-age=60");

@@ -1,8 +1,4 @@
-// Visar kommande matcher på matcher.html.
-
-// Vilken liga vi hämtar. PL = Premier League.
-// Andra koder hittar ni i API:ets dokumentation (t.ex. PD, BL1, SA).
-const TAVLING = "PL";
+// Visar dagens matcher i alla ligor på matcher.html.
 
 // Hjälpfunktion: skapar ett element med en klass och en text
 function skapa(tagg, klass, text) {
@@ -62,16 +58,8 @@ async function visaMatcher() {
   const meddelande = skapa("p", "mr-meddelande", "Hämtar matcher...");
   lista.appendChild(meddelande);
 
-  // Datum: från idag till och med 7 dagar framåt
-  const idag = new Date();
-  const omSjuDagar = new Date();
-  omSjuDagar.setDate(idag.getDate() + 7);
-  const fran = idag.toISOString().slice(0, 10);   // t.ex. 2026-10-19
-  const till = omSjuDagar.toISOString().slice(0, 10);
-
-  const data = await hamtaFranApi(
-    "/competitions/" + TAVLING + "/matches?dateFrom=" + fran + "&dateTo=" + till
-  );
+  // Utan datum ger /matches dagens matcher i alla ligor vår nyckel har tillgång till
+  const data = await hamtaFranApi("/matches");
 
   if (!data) {
     meddelande.textContent = "Kunde inte hämta matcher. Vänta en minut och ladda om sidan.";
@@ -79,26 +67,18 @@ async function visaMatcher() {
   }
 
   if (data.matches.length === 0) {
-    meddelande.textContent = "Inga matcher de närmaste dagarna.";
+    meddelande.textContent = "Inga matcher idag.";
     return;
   }
 
   meddelande.remove();
 
-  // Gå igenom matcherna och lägg en datumrubrik varje gång dagen byter
-  let senasteDag = "";
+  // Gå igenom matcherna och lägg en rubrik varje gång turneringen byter
+  let senasteTavling = "";
   data.matches.forEach(function (match) {
-    const datum = new Date(match.utcDate);
-    const dagNyckel = datum.toLocaleDateString("sv-SE");   // t.ex. 2026-10-24
-
-    if (dagNyckel !== senasteDag) {
-      const rubrik = datum.toLocaleDateString("sv-SE", {
-        weekday: "long",
-        day: "numeric",
-        month: "long"
-      });
-      lista.appendChild(skapa("h2", "mr-dag", rubrik));
-      senasteDag = dagNyckel;
+    if (match.competition.name !== senasteTavling) {
+      lista.appendChild(skapa("h2", "mr-dag", match.competition.name));
+      senasteTavling = match.competition.name;
     }
 
     lista.appendChild(byggMatchrad(match));

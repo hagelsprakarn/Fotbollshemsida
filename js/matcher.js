@@ -73,6 +73,12 @@ async function visaMatcher() {
 
   meddelande.remove();
 
+  // Sortera så att matcher i samma turnering hamnar tillsammans, i tidsordning
+  data.matches.sort(function (a, b) {
+    return a.competition.name.localeCompare(b.competition.name) ||
+      a.utcDate.localeCompare(b.utcDate);
+  });
+
   // Gå igenom matcherna och lägg en rubrik varje gång turneringen byter
   let senasteTavling = "";
   data.matches.forEach(function (match) {

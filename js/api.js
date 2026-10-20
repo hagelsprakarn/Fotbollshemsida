@@ -1,4 +1,8 @@
-// Hämtar data från football-data.org.
+// Hämtar data från football-data.org via vår mellanhand på Cloudflare.
+// Mellanhanden lägger till API-nyckeln, så den behöver inte finnas här.
+// Byt ut adressen nedan mot adressen till er egen Worker.
+const API_BAS_URL = "https://fotboll-api.DITT-NAMN.workers.dev";
+
 // "slutpunkt" är delen efter /v4, t.ex. "/competitions/PL/matches".
 async function hamtaFranApi(slutpunkt) {
   const cacheNyckel = "api:" + slutpunkt;
@@ -18,9 +22,7 @@ async function hamtaFranApi(slutpunkt) {
 
   // 2. Fråga API:et
   try {
-    const svar = await fetch(API_BAS_URL + slutpunkt, {
-      headers: { "X-Auth-Token": API_NYCKEL }
-    });
+    const svar = await fetch(API_BAS_URL + slutpunkt);
 
     if (!svar.ok) {
       throw new Error("API svarade med felkod " + svar.status);

@@ -1,0 +1,5 @@
+# Inställningar för Cloudflare Worker (mellanhanden mot football-data.org).
+# Cloudflare läser den här filen varje gång vi pushar till GitHub.
+name = "fotboll-api"
+main = "worker/worker.js"
+compatibility_date = "2026-10-01"

@@ -112,6 +112,8 @@ async function visaLagval(huvudkort, ligakod) {
   const foljdaId = hamtaFoljdaLag().map(function (l) { return l.id; });
   const rutnat = skapa("div", "fo-lagval");
 
+  data.teams.forEach(function (lag) { lag.shortName = lag.shortName || lag.name; });
+
   data.teams
     .sort(function (a, b) { return a.shortName.localeCompare(b.shortName); })
     .forEach(function (lag) {

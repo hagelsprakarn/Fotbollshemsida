@@ -67,9 +67,19 @@ async function visaNyheter() {
   }
 
   meddelande.remove();
-  nyheter.forEach(function (nyhet) {
-    lista.appendChild(byggNyhet(nyhet));
+
+  // Dela upp nyheterna i sidor som man bläddrar mellan med pilarna
+  const sidor = [];
+  nyheter.forEach(function (nyhet, i) {
+    if (i % NYHETER_PER_SIDA === 0) {
+      sidor.push(skapa("div", "mr-sida"));
+    }
+    sidor[sidor.length - 1].appendChild(byggNyhet(nyhet));
   });
+
+  visaSidor(lista, sidor);
 }
+
+const NYHETER_PER_SIDA = 4;
 
 visaNyheter();

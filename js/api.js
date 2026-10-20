@@ -1,7 +1,6 @@
 // Hämtar data från football-data.org via vår mellanhand på Cloudflare.
 // Mellanhanden lägger till API-nyckeln, så den behöver inte finnas här.
-// Byt ut adressen nedan mot adressen till er egen Worker.
-const API_BAS_URL = "https://fotboll-api.DITT-NAMN.workers.dev";
+const API_BAS_URL = "https://fotboll-api.john-e-nordstrom.workers.dev";
 
 // "slutpunkt" är delen efter /v4, t.ex. "/competitions/PL/matches".
 async function hamtaFranApi(slutpunkt) {

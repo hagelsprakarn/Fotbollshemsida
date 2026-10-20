@@ -268,7 +268,8 @@ body.startsida {
 
 .mr-rad {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* Lika breda lagkolumner oavsett namnlängd, så att resultatet alltid hamnar i mitten */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   margin: 0 2vw 1vh;
@@ -285,6 +286,16 @@ body.startsida {
   gap: 8px;
 }
 
+/* För långa lagnamn kortas av med "…" i stället för att trycka undan resten */
+.mr-lag span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mr-lag img {
+  flex-shrink: 0;
+}
 .mr-lag.borta {
   justify-content: flex-end;
   text-align: right;
@@ -631,11 +642,13 @@ body.startsida {
 .mr-sidruta {
   flex: 1;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* alltid full bredd, oavsett innehåll */
   padding: 0 2.5vw 5vh;
   overflow: hidden;
 }
 .mr-sida {
   grid-area: 1 / 1;
+  min-width: 0;
 }
 .mr-sida.in-hoger   { animation: glid-in-hoger 0.35s ease forwards; }
 .mr-sida.in-vanster { animation: glid-in-vanster 0.35s ease forwards; }

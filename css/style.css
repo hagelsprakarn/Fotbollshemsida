@@ -617,3 +617,65 @@ body.startsida {
   font-size: clamp(11px, 0.75vw, 14px);
   text-transform: capitalize;
 }
+
+/* ============================================
+   MATCHER: BLÄDDRA MED PILAR
+   ============================================ */
+#match-lista {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;   /* ingen scroll, man bläddrar med pilarna i stället */
+}
+/* Sidorna läggs ovanpå varandra så att de kan glida in och ut samtidigt */
+.mr-sidruta {
+  flex: 1;
+  display: grid;
+  padding: 0 2.5vw 5vh;
+  overflow: hidden;
+}
+.mr-sida {
+  grid-area: 1 / 1;
+}
+.mr-sida.in-hoger   { animation: glid-in-hoger 0.35s ease forwards; }
+.mr-sida.in-vanster { animation: glid-in-vanster 0.35s ease forwards; }
+.mr-sida.ut-vanster { animation: glid-ut-vanster 0.35s ease forwards; }
+.mr-sida.ut-hoger   { animation: glid-ut-hoger 0.35s ease forwards; }
+
+@keyframes glid-in-hoger   { from { opacity: 0; transform: translateX(40%); }  to { opacity: 1; transform: none; } }
+@keyframes glid-in-vanster { from { opacity: 0; transform: translateX(-40%); } to { opacity: 1; transform: none; } }
+@keyframes glid-ut-vanster { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-40%); } }
+@keyframes glid-ut-hoger   { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(40%); } }
+
+.mr-pil {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(32px, 2.4vw, 46px);
+  height: clamp(32px, 2.4vw, 46px);
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--farg-text);
+  font-size: clamp(22px, 1.8vw, 34px);
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+.mr-pil:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.mr-pil.hoger   { right: 0.6vw; }
+.mr-pil.vanster { left: 0.6vw; }
+.mr-pil[hidden] {
+  display: none;
+}
+.mr-raknare {
+  position: absolute;
+  bottom: 2vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.8vw, 15px);
+}

@@ -79,16 +79,86 @@ async function visaMatcher() {
       a.utcDate.localeCompare(b.utcDate);
   });
 
-  // Gå igenom matcherna och lägg en rubrik varje gång turneringen byter
-  let senasteTavling = "";
-  data.matches.forEach(function (match) {
-    if (match.competition.name !== senasteTavling) {
-      lista.appendChild(skapa("h2", "mr-dag", match.competition.name));
-      senasteTavling = match.competition.name;
+  // Dela upp matcherna i sidor med MATCHER_PER_SIDA på varje.
+  // Varje sida får en rubrik varje gång turneringen byter (och alltid överst).
+  const sidor = [];
+  data.matches.forEach(function (match, i) {
+    if (i % MATCHER_PER_SIDA === 0) {
+      sidor.push(skapa("div", "mr-sida"));
     }
-
-    lista.appendChild(byggMatchrad(match));
+    const sida = sidor[sidor.length - 1];
+    const forra = data.matches[i - 1];
+    if (i % MATCHER_PER_SIDA === 0 || forra.competition.name !== match.competition.name) {
+      sida.appendChild(skapa("h2", "mr-dag", match.competition.name));
+    }
+    sida.appendChild(byggMatchrad(match));
   });
+
+  visaSidor(lista, sidor);
+}
+
+const MATCHER_PER_SIDA = 6;
+
+// Visar en sida i taget med pilar för att bläddra till nästa/förra sidan
+function visaSidor(lista, sidor) {
+  const ruta = skapa("div", "mr-sidruta");
+  lista.appendChild(ruta);
+
+  const vanster = skapa("button", "mr-pil vanster", "‹");
+  const hoger = skapa("button", "mr-pil hoger", "›");
+  vanster.setAttribute("aria-label", "Förra matcherna");
+  hoger.setAttribute("aria-label", "Nästa matcher");
+  const raknare = skapa("div", "mr-raknare");
+  lista.appendChild(vanster);
+  lista.appendChild(hoger);
+  lista.appendChild(raknare);
+
+  let nuvarande = 0;
+  ruta.appendChild(sidor[0]);
+
+  function uppdatera() {
+    vanster.hidden = nuvarande === 0;
+    hoger.hidden = nuvarande === sidor.length - 1;
+    raknare.textContent = sidor.length > 1 ? (nuvarande + 1) + " / " + sidor.length : "";
+  }
+
+  // riktning 1 = nästa (glider in från höger), -1 = förra (glider in från vänster)
+  function byt(riktning) {
+    const ny = nuvarande + riktning;
+    if (ny < 0 || ny >= sidor.length) return;
+
+    const gammal = sidor[nuvarande];
+    const nySida = sidor[ny];
+    nuvarande = ny;
+
+    // Klickar man snabbt: ta bort sidor som fortfarande håller på att glida ut
+    Array.from(ruta.children).forEach(function (sida) {
+      if (sida !== gammal) sida.remove();
+    });
+
+    gammal.className = "mr-sida ut" + (riktning > 0 ? "-vanster" : "-hoger");
+    nySida.className = "mr-sida in" + (riktning > 0 ? "-hoger" : "-vanster");
+    ruta.appendChild(nySida);
+
+    // Ta bort den gamla sidan när animationen är klar
+    setTimeout(function () {
+      if (gammal !== sidor[nuvarande]) gammal.remove();
+      if (nySida === sidor[nuvarande]) nySida.className = "mr-sida";
+    }, 350);
+
+    uppdatera();
+  }
+
+  vanster.addEventListener("click", function () { byt(-1); });
+  hoger.addEventListener("click", function () { byt(1); });
+
+  // Piltangenterna på tangentbordet fungerar också
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") byt(1);
+    if (e.key === "ArrowLeft") byt(-1);
+  });
+
+  uppdatera();
 }
 
 visaMatcher();

@@ -853,7 +853,7 @@ a.re-match:hover {
   display: flex;
   flex-direction: column;
   margin: 0 2vw;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 3 / 5;   /* hög nog för fem rader med ansikten per lag */
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
   background: repeating-linear-gradient(#2f8f46 0, #2f8f46 10%, #2a8340 10%, #2a8340 20%);
@@ -906,8 +906,8 @@ a.re-match:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(24px, 2vw, 38px);
-  height: clamp(24px, 2vw, 38px);
+  width: clamp(36px, 3vw, 56px);   /* samma storlek som ansiktena */
+  height: clamp(36px, 3vw, 56px);
   border-radius: 50%;
   font-size: clamp(11px, 0.8vw, 15px);
 }

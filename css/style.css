@@ -639,6 +639,62 @@ body.startsida {
 }
 
 /* ============================================
+   MATCHER: SENASTE RESULTATEN (högra rutan)
+   ============================================ */
+.re-turnering {
+  margin: 2vh 0.6vw 0.8vh;
+  text-align: center;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(11px, 0.8vw, 15px);
+  color: var(--farg-text-dampad);
+}
+.re-match {
+  margin: 0 0.6vw 0.8vh;
+  padding: 0.8vh 0.6vw;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: clamp(11px, 0.85vw, 16px);
+}
+.re-dag {
+  margin-bottom: 0.3vh;
+  text-align: center;
+  font-size: clamp(9px, 0.65vw, 12px);
+  color: var(--farg-text-dampad);
+}
+.re-lag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Laget som förlorade visas lite svagare */
+.re-lag.forlorade {
+  color: var(--farg-text-dampad);
+}
+.re-lag img {
+  width: 1.3em;
+  height: 1.3em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.re-namn {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.re-mal {
+  font-weight: bold;
+}
+.re-meddelande {
+  padding: 2vh 0.8vw;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+
+/* ============================================
    MATCHER: BLÄDDRA MED PILAR
    ============================================ */
 .bladdra-kort {

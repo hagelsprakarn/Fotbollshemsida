@@ -344,8 +344,7 @@ body.startsida {
 }
 .ny-kort:first-of-type {
   margin-top: 2vh;
-}
-.ny-kort:hover {
+}.ny-kort:hover {
   background-color: rgba(0, 0, 0, 0.35);
 }
 .ny-kort img {
@@ -651,9 +650,11 @@ body.startsida {
 /* Sidorna läggs ovanpå varandra så att de kan glida in och ut samtidigt */
 .mr-sidruta {
   flex: 1;
+  min-height: 0;   /* får krympa så att räknaren under alltid får plats */
   display: grid;
   grid-template-columns: minmax(0, 1fr);   /* alltid full bredd, oavsett innehåll */
-  padding: 0 2.5vw 5vh;
+  grid-template-rows: minmax(0, 1fr);      /* sidan blir lika hög som rutan */
+  padding: 0 2.5vw 1vh;
   overflow: hidden;
 }
 .mr-sida {
@@ -693,11 +694,10 @@ body.startsida {
 .mr-pil[hidden] {
   display: none;
 }
+/* Räknaren ligger under sidorna (inte ovanpå) så att den aldrig täcker innehållet */
 .mr-raknare {
-  position: absolute;
-  bottom: 2vh;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
+  padding: 0.5vh 0 1.5vh;
   text-align: center;
   color: var(--farg-text-dampad);
   font-size: clamp(11px, 0.8vw, 15px);

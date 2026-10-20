@@ -68,18 +68,45 @@ async function visaNyheter() {
 
   meddelande.remove();
 
-  // Dela upp nyheterna i sidor som man bläddrar mellan med pilarna
-  const sidor = [];
-  nyheter.forEach(function (nyhet, i) {
-    if (i % NYHETER_PER_SIDA === 0) {
-      sidor.push(skapa("div", "mr-sida"));
-    }
-    sidor[sidor.length - 1].appendChild(byggNyhet(nyhet));
-  });
+  // Vänta tills typsnittet har laddats, annars blir mätningen nedan fel
+  await document.fonts.ready;
 
-  visaSidor(lista, sidor);
+  visaSidor(lista, delaUppISidor(lista, nyheter.map(byggNyhet)));
 }
 
-const NYHETER_PER_SIDA = 4;
+// Delar upp nyhetskorten i sidor så att varje sida får så många nyheter som
+// faktiskt får plats (långa rubriker tar mer plats). Vi lägger korten i en
+// osynlig provsida, ett i taget, och börjar på en ny sida när det blir fullt.
+function delaUppISidor(lista, kort) {
+  const provruta = skapa("div", "mr-sidruta");
+  const provraknare = skapa("div", "mr-raknare", "1 / 1");   // tar samma plats som den riktiga räknaren
+  provruta.style.visibility = "hidden";
+  lista.appendChild(provruta);
+  lista.appendChild(provraknare);
+
+  const sidor = [];
+  let sida = skapa("div", "mr-sida");
+  provruta.appendChild(sida);
+
+  kort.forEach(function (ettKort) {
+    sida.appendChild(ettKort);
+    const forHog = ettKort.getBoundingClientRect().bottom > sida.getBoundingClientRect().bottom;
+
+    // Får kortet inte plats flyttas det till en ny sida (men varje sida har minst en nyhet)
+    if (forHog && sida.children.length > 1) {
+      sida.remove();
+      sidor.push(sida);
+      sida = skapa("div", "mr-sida");
+      provruta.appendChild(sida);
+      sida.appendChild(ettKort);
+    }
+  });
+
+  sida.remove();
+  sidor.push(sida);
+  provruta.remove();
+  provraknare.remove();
+  return sidor;
+}
 
 visaNyheter();

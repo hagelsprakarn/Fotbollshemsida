@@ -12,11 +12,11 @@ function skapa(tagg, klass, text) {
   return element;
 }
 
-// Lagets namn: hela namnet, plus förkortningen (t.ex. TOT) som visas när raden är smal
+// Lagets förkortning (t.ex. TOT), så att namnet alltid får plats på en rad.
+// Hela namnet visas när man håller musen över.
 function lagnamn(lag) {
-  const namn = skapa("span");
-  namn.appendChild(skapa("span", "fullt-namn", lag.shortName || lag.name));
-  namn.appendChild(skapa("span", "forkortning", lag.tla || lag.shortName || lag.name));
+  const namn = skapa("span", "", lag.tla || lag.shortName || lag.name);
+  namn.title = lag.name;
   return namn;
 }
 

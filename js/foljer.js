@@ -21,6 +21,14 @@ function skapa(tagg, klass, text) {
   return element;
 }
 
+// Lagets namn: hela namnet, plus förkortningen (t.ex. TOT) som visas när raden är smal
+function lagnamn(lag) {
+  const namn = skapa("span");
+  namn.appendChild(skapa("span", "fullt-namn", lag.shortName || lag.name));
+  namn.appendChild(skapa("span", "forkortning", lag.tla || lag.shortName || lag.name));
+  return namn;
+}
+
 function skapaLogga(adress) {
   const logga = document.createElement("img");
   logga.src = adress;
@@ -161,7 +169,7 @@ function byggLagmatch(match, lagId, spelad) {
 
   const hemma = skapa("div", "mr-lag");
   hemma.appendChild(skapaLogga(match.homeTeam.crest));
-  hemma.appendChild(skapa("span", "", match.homeTeam.shortName || match.homeTeam.name));
+  hemma.appendChild(lagnamn(match.homeTeam));
 
   let mitten;
   if (spelad) {
@@ -173,7 +181,7 @@ function byggLagmatch(match, lagId, spelad) {
   }
 
   const borta = skapa("div", "mr-lag borta");
-  borta.appendChild(skapa("span", "", match.awayTeam.shortName || match.awayTeam.name));
+  borta.appendChild(lagnamn(match.awayTeam));
   borta.appendChild(skapaLogga(match.awayTeam.crest));
 
   const datum = skapa("div", "fo-datum", formatDatum(match.utcDate, false) + " · " + match.competition.name);

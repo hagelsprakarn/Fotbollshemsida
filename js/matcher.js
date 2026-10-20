@@ -8,6 +8,14 @@ function skapa(tagg, klass, text) {
   return element;
 }
 
+// Lagets namn: hela namnet, plus förkortningen (t.ex. TOT) som visas när raden är smal
+function lagnamn(lag) {
+  const namn = skapa("span");
+  namn.appendChild(skapa("span", "fullt-namn", lag.shortName || lag.name));
+  namn.appendChild(skapa("span", "forkortning", lag.tla || lag.shortName || lag.name));
+  return namn;
+}
+
 // Bygger en rad för en match
 function byggMatchrad(match) {
   const rad = skapa("div", "mr-rad");
@@ -20,7 +28,7 @@ function byggMatchrad(match) {
     logga.alt = "";
     hemma.appendChild(logga);
   }
-  hemma.appendChild(skapa("span", "", match.homeTeam.shortName || match.homeTeam.name));
+  hemma.appendChild(lagnamn(match.homeTeam));
 
   // Mitten: resultat om matchen har börjat, annars avsparkstid
   const harResultat = ["IN_PLAY", "PAUSED", "FINISHED"].includes(match.status);
@@ -37,7 +45,7 @@ function byggMatchrad(match) {
 
   // Bortalag
   const borta = skapa("div", "mr-lag borta");
-  borta.appendChild(skapa("span", "", match.awayTeam.shortName || match.awayTeam.name));
+  borta.appendChild(lagnamn(match.awayTeam));
   if (match.awayTeam.crest) {
     const logga = document.createElement("img");
     logga.src = match.awayTeam.crest;

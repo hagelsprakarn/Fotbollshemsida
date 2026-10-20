@@ -286,12 +286,22 @@ body.startsida {
   gap: 8px;
 }
 
-/* För långa lagnamn kortas av med "…" i stället för att trycka undan resten */
+/* Långa lagnamn får gå över två rader i stället för att trycka undan resten */
 .mr-lag span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+/* Förkortningen (t.ex. TOT) visas bara när raden är för smal för hela namnet */
+.mr-lag .forkortning {
+  display: none;
+}
+.mr-rad {
+  container-type: inline-size;
+}
+@container (max-width: 340px) {
+  .mr-lag .fullt-namn { display: none; }
+  .mr-lag .forkortning { display: inline; }
 }
 .mr-lag img {
   flex-shrink: 0;

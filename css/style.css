@@ -20,12 +20,20 @@
   box-sizing: border-box;
 }
 
+/* I sökrutor och andra fält ska markören synas som vanligt */
+input,
+textarea {
+  caret-color: auto;
+}
+
 body {
   margin: 0;
   background-color: var(--farg-bakgrund);
   color: var(--farg-text);
   font-family: var(--typsnitt);
   line-height: 1.5;
+  /* Dölj skrivmarkören (strecket) när man klickar på vanlig text */
+  caret-color: transparent;
   /* Gör att footern alltid ligger längst ner, även på korta sidor */
   min-height: 100vh;
   display: flex;

@@ -359,3 +359,88 @@ body.startsida {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ============================================
+   LIGOR OCH TABELLER
+   ============================================ */
+.liga-lista {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5vh 1vw;
+  margin: 3vh 2vw;
+}
+.liga-kort {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8vh;
+  padding: 2.5vh 1vw;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  color: var(--farg-text);
+  text-decoration: none;
+  text-align: center;
+}
+.liga-kort:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+/* Ljus bakgrund bakom loggorna så att mörka loggor syns */
+.liga-kort img {
+  width: clamp(48px, 4.5vw, 84px);
+  height: clamp(48px, 4.5vw, 84px);
+  object-fit: contain;
+  padding: 8px;
+  background-color: #ffffff;
+  border-radius: 50%;
+}
+.liga-namn {
+  font-family: var(--typsnitt);
+  font-size: clamp(14px, 1.15vw, 21px);
+}
+.liga-land {
+  font-size: clamp(11px, 0.8vw, 15px);
+  color: var(--farg-text-dampad);
+}
+.liga-tillbaka {
+  display: inline-block;
+  margin: 2vh 2vw 0;
+  color: var(--farg-text-dampad);
+  text-decoration: none;
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.liga-tillbaka:hover {
+  color: var(--farg-text);
+}
+.liga-tabell {
+  width: calc(100% - 4vw);
+  margin: 2vh 2vw;
+  border-collapse: collapse;
+  font-size: clamp(12px, 0.95vw, 18px);
+}
+.liga-tabell th {
+  color: var(--farg-text-dampad);
+  font-weight: normal;
+  padding: 0.6vh 0.4vw;
+  text-align: center;
+}
+.liga-tabell td {
+  padding: 0.8vh 0.4vw;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.liga-tabell .lag {
+  text-align: left;
+}
+.liga-tabell td.lag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.liga-tabell td.lag img {
+  width: 1.4em;
+  height: 1.4em;
+  object-fit: contain;
+}
+.liga-tabell .poang {
+  font-weight: bold;
+}

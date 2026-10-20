@@ -16,7 +16,6 @@ const NYHETSFLODEN = [
   { kalla: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/football/rss.xml" },
   { kalla: "Sky Sports", url: "https://www.skysports.com/rss/12040" },
   { kalla: "The Guardian", url: "https://www.theguardian.com/football/rss" },
-  { kalla: "ESPN", url: "https://www.espn.com/espn/rss/soccer/news" },
   { kalla: "Aftonbladet", url: "https://rss.aftonbladet.se/rss2/small/pages/sections/sportbladet/fotboll/" },
   { kalla: "Expressen", url: "https://feeds.expressen.se/fotboll/" }
 ];
@@ -70,7 +69,9 @@ async function hamtaFlode(flode) {
         text: beskrivning.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200),
         tid: tolkaDatum(tagg(item, "pubDate"))
       };
-    }).filter(function (n) { return n.rubrik && n.lank; });
+    }).filter(function (n) { return n.rubrik && n.lank; })
+      .sort(function (a, b) { return b.tid - a.tid; })
+      .slice(0, 8);   // högst 8 per källa, så ingen källa tar över listan
   } catch (fel) {
     return [];   // om en källa krånglar visar vi bara de andra
   }

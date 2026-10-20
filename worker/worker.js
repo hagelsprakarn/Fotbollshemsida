@@ -14,7 +14,7 @@ const TILLATNA_ADRESSER = [
 // Nyhetsflöden (RSS) som visas på Nyheter-sidan
 const NYHETSFLODEN = [
   { kalla: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/football/rss.xml" },
-  { kalla: "Sky Sports", url: "https://www.skysports.com/rss/12040" },
+  { kalla: "Sky Sports", url: "https://www.skysports.com/rss/11095" },
   { kalla: "The Guardian", url: "https://www.theguardian.com/football/rss" },
   { kalla: "Aftonbladet", url: "https://rss.aftonbladet.se/rss2/small/pages/sections/sportbladet/fotboll/" },
   { kalla: "Expressen", url: "https://feeds.expressen.se/fotboll/" }

@@ -308,3 +308,54 @@ body.startsida {
   color: var(--farg-text-dampad);
   font-family: var(--typsnitt);
 }
+/* ============================================
+   NYHETER
+   ============================================ */
+.ny-kort {
+  display: flex;
+  gap: 1vw;
+  margin: 0 2vw 1.5vh;
+  padding: 1.2vh 1vw;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  color: var(--farg-text);
+  text-decoration: none;
+}
+.ny-kort:first-of-type {
+  margin-top: 2vh;
+}
+.ny-kort:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.ny-kort img {
+  width: 30%;
+  max-width: 180px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.ny-innehall {
+  min-width: 0;
+}
+.ny-kalla {
+  font-size: clamp(11px, 0.8vw, 15px);
+  color: var(--farg-text-dampad);
+}
+.ny-rubrik {
+  margin: 0.3vh 0;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(14px, 1.15vw, 21px);
+  line-height: 1.25;
+}
+.ny-text {
+  margin: 0;
+  font-size: clamp(12px, 0.85vw, 16px);
+  color: var(--farg-text-dampad);
+  /* Visa högst två rader text */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

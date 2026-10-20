@@ -920,6 +920,22 @@ a.re-match:hover {
   color: var(--farg-yta);
   border: 2px solid var(--farg-yta);
 }
+/* Spelarens ansikte (urklippt bild) i en cirkel, i lagets färger */
+.ma-ansikte {
+  width: clamp(36px, 3vw, 56px);
+  height: clamp(36px, 3vw, 56px);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+}
+.ma-halva.hemma .ma-ansikte {
+  background-color: var(--farg-yta);
+  border: 2px solid #ffffff;
+}
+.ma-halva.borta .ma-ansikte {
+  background-color: #ffffff;
+  border: 2px solid var(--farg-yta);
+}
 .ma-namn {
   max-width: 100%;
   margin-top: 2px;

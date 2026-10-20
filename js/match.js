@@ -73,10 +73,23 @@ function byggHuvud(match) {
   return huvud;
 }
 
+// Spelarens ansikte i en cirkel. Hittas ingen bild visas tröjnumret i stället.
+function byggAnsikte(spelare, lagnamn) {
+  const bild = document.createElement("img");
+  bild.className = "ma-ansikte";
+  bild.alt = "";
+  bild.onerror = function () {
+    bild.replaceWith(skapa("div", "ma-nummer", spelare.nummer));
+  };
+  bild.src = API_BAS_URL + "/spelarbild?namn=" + encodeURIComponent(spelare.namn) +
+    "&lag=" + encodeURIComponent(lagnamn);
+  return bild;
+}
+
 // En planhalva. Hemmalaget har målvakten längst ner, bortalaget längst upp.
 // "lag.rader" kommer färdiga från mellanhanden: målvakten först, sedan bakifrån
 // och framåt, och varje rad från lagets vänsterkant till högerkant.
-function byggPlanhalva(lag, arHemma) {
+function byggPlanhalva(lag, arHemma, lagnamn) {
   const halva = skapa("div", "ma-halva" + (arHemma ? " hemma" : " borta"));
   if (!lag) {
     halva.appendChild(skapa("div", "ma-saknas", "Ingen uppställning hittades"));
@@ -88,7 +101,7 @@ function byggPlanhalva(lag, arHemma) {
     (arHemma ? rad : rad.slice().reverse()).forEach(function (spelare) {
       const ruta = skapa("div", "ma-spelare");
       ruta.title = spelare.namn;
-      ruta.appendChild(skapa("div", "ma-nummer", spelare.nummer));
+      ruta.appendChild(byggAnsikte(spelare, lagnamn));
       ruta.appendChild(skapa("div", "ma-namn", spelare.efternamn));
       radElement.appendChild(ruta);
     });
@@ -119,8 +132,8 @@ function byggUppstallning(data, match) {
 
   sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[1], match.awayTeam)));
   const plan = skapa("div", "ma-plan");
-  plan.appendChild(byggPlanhalva(data.lag[1], false));
-  plan.appendChild(byggPlanhalva(data.lag[0], true));
+  plan.appendChild(byggPlanhalva(data.lag[1], false, match.awayTeam.shortName || match.awayTeam.name));
+  plan.appendChild(byggPlanhalva(data.lag[0], true, match.homeTeam.shortName || match.homeTeam.name));
   sektion.appendChild(plan);
   sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[0], match.homeTeam)));
 

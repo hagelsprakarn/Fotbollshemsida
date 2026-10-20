@@ -259,6 +259,27 @@ async function hamtaUppstallning(matchId, env) {
   return { typ: "forvantad", lag: lag };
 }
 
+// ============================================
+// SPELARBILDER (från TheSportsDB)
+// ESPN har bara bilder på ett fåtal spelare, så vi letar i TheSportsDB i stället.
+// ============================================
+
+async function hittaSpelarbild(namn, lag) {
+  // TheSportsDB vill ha namnet utan accenter och med _ mellan orden, t.ex. "Antonin_Kinsky"
+  const sok = namn.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().replace(/\s+/g, "_");
+  const svar = await fetch("https://www.thesportsdb.com/api/v1/json/123/searchplayers.php?p=" + encodeURIComponent(sok));
+  if (!svar.ok) throw new Error("TheSportsDB svarade med " + svar.status);
+  const data = await svar.json();
+
+  // Finns flera med samma namn väljer vi den som spelar i rätt lag
+  const fotbollsspelare = (data.player || []).filter(function (p) {
+    return p.strSport === "Soccer" && (p.strCutout || p.strThumb);
+  });
+  const spelare = fotbollsspelare.find(function (p) { return liknar(p.strTeam, lag); }) || fotbollsspelare[0];
+  // "Cutout" är en urklippt bild utan bakgrund, den passar bäst i cirkeln på planen
+  return spelare ? (spelare.strCutout || spelare.strThumb) : null;
+}
+
 function corsHeaders(origin) {
   const tillaten = TILLATNA_ADRESSER.includes(origin) ? origin : TILLATNA_ADRESSER[0];
   return {
@@ -298,6 +319,35 @@ export default {
       svar = new Response(svar.body, svar);
       for (const [namn, varde] of Object.entries(headers)) {
         svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
+    // /spelarbild?namn=Erling Haaland&lag=Man City skickar vidare till en bild på spelaren,
+    // så att hemsidan kan använda adressen direkt i en <img>. Finns ingen bild svarar vi 404.
+    // Bilderna sparas i 30 dagar (TheSportsDB tillåter bara 30 anrop i minuten).
+    if (url.pathname === "/spelarbild") {
+      const namn = url.searchParams.get("namn") || "";
+      const lag = url.searchParams.get("lag") || "";
+      const cacheNyckel = new Request("https://cache.lokal/spelarbild/" + encodeURIComponent(normalisera(namn) + "|" + normalisera(lag)));
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let bild = null;
+        let misslyckades = false;
+        try {
+          if (namn) bild = await hittaSpelarbild(namn, lag);
+        } catch (fel) {
+          misslyckades = true;
+        }
+        if (bild) {
+          svar = new Response(null, { status: 302, headers: { "Location": bild, "Cache-Control": "public, max-age=2592000" } });
+        } else {
+          // Gick anropet fel (t.ex. för många i minuten) försöker vi igen nästa gång
+          svar = new Response("Ingen bild", { status: 404, headers: { "Cache-Control": misslyckades ? "no-store" : "public, max-age=86400" } });
+        }
+        if (!misslyckades) {
+          ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()).catch(function () {}));
+        }
       }
       return svar;
     }

@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&display=swap');
+/* ============================================
+   FÄRGER OCH TYPSNITT
+   Byt ut värdena här när ni har bestämt design.
+   Alla sidor använder dessa variabler.
+   ============================================ */
+:root {
+  --farg-bakgrund: #2a1570;     /* sidans bakgrund (från layouten) */
+  --farg-yta: #2e3094;          /* knappar och kort (från layouten) */
+  --farg-text: #ffffff;
+  --farg-text-dampad: #c9c4e6;
+  --farg-accent: #00a86b;       /* ingen accentfärg fanns i layouten, byt när ni vet */
+  --typsnitt: "Cooper Black", "Caprasimo", Georgia, serif;
+}
+
+/* ============================================
+   GRUNDINSTÄLLNINGAR
+   ============================================ */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--farg-bakgrund);
+  color: var(--farg-text);
+  font-family: var(--typsnitt);
+  line-height: 1.5;
+  /* Gör att footern alltid ligger längst ner, även på korta sidor */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   HEADER OCH NAVIGATION
+   ============================================ */
+.header {
+  background-color: var(--farg-yta);
+  border-bottom: 2px solid var(--farg-accent);
+}
+
+.header-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;   /* på små skärmar får menyn ligga under loggan */
+  gap: 8px;
+}
+
+.logo {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--farg-text);
+  text-decoration: none;
+}
+
+.nav a {
+  color: var(--farg-text-dampad);
+  text-decoration: none;
+  margin-left: 16px;
+  padding: 4px 0;
+}
+
+.nav a:hover,
+.nav a.aktiv {
+  color: var(--farg-accent);
+}
+
+/* ============================================
+   HUVUDINNEHÅLL
+   ============================================ */
+.main {
+  flex: 1;   /* tar upp allt ledigt utrymme så att footern hamnar längst ner */
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.sektion {
+  margin-bottom: 32px;
+}
+
+h1, h2 {
+  margin-top: 0;
+}
+
+/* ============================================
+   KORT (rutor för matcher, lag m.m.)
+   ============================================ */
+.kort {
+  background-color: var(--farg-yta);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+/* En matchrad: lag – tid – lag */
+.match {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-tid {
+  color: var(--farg-accent);
+  font-weight: bold;
+}
+
+/* Rutnät för lag: 2 kolumner på mobil, fler på större skärmar */
+.rutnat {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.rutnat .kort {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+@media (min-width: 700px) {
+  .rutnat {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.footer {
+  background-color: var(--farg-yta);
+  text-align: center;
+  padding: 16px;
+  margin-top: 24px;
+}
+
+.footer p {
+  margin: 4px 0;
+}
+
+.footer-liten {
+  font-size: 0.85rem;
+  color: var(--farg-text-dampad);
+}
+/* ============================================
+   STARTSIDAN (layout från vår designer)
+   Måtten är mätta från layoutbilden.
+   ============================================ */
+body.startsida {
+  display: block;   /* vi behöver inte footer-tricket här */
+}
+
+/* Rutnät med samma proportioner som bilden */
+.startsida-layout {
+  display: grid;
+  grid-template-columns: 4.6% 8.475% 20.625% 32.6% 16.45% 11.575% 5.675%;
+  padding-top: 11.55vh;
+  min-height: 100vh;
+}
+
+/* Menyknapparna till vänster */
+.sidomeny {
+  grid-column: 2;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 1.9vh;
+}
+
+.sidomeny a {
+  display: flex;
+  align-items: center;
+  height: 5.9vh;
+  min-height: 40px;
+  padding-left: 0.85vw;
+  background-color: var(--farg-yta);
+  color: var(--farg-text);
+  border-radius: 0.8vw;
+  text-decoration: none;
+  font-size: clamp(14px, 1.45vw, 30px);
+}
+
+.sidomeny a:hover {
+  filter: brightness(1.2);
+}
+
+/* Det stora kortet i mitten */
+.huvudkort {
+  grid-column: 4;
+  height: 76.9vh;
+  background-color: var(--farg-yta);
+  border-radius: 1.7vw;
+}
+
+/* Det smala kortet till höger */
+.sidokort {
+  grid-column: 6;
+  height: 76.7vh;
+  background-color: var(--farg-yta);
+  border-radius: 1.7vw;
+}
+
+/* Mobil: allt läggs under varandra */
+@media (max-width: 800px) {
+  .startsida-layout {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+  .sidomeny,
+  .huvudkort,
+  .sidokort {
+    grid-column: 1;
+  }
+  .sidomeny {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sidomeny a {
+    padding: 0 16px;
+  }
+  .huvudkort,
+  .sidokort {
+    height: 60vh;
+    border-radius: 24px;
+  }
+}

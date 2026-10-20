@@ -451,3 +451,169 @@ body.startsida {
 .liga-tabell .poang {
   font-weight: bold;
 }
+
+/* ============================================
+   FÖLJER
+   ============================================ */
+/* Högerrutan: Mina lag */
+.sidokort {
+  overflow-y: auto;
+}
+.fo-sidorubrik {
+  margin: 2vh 0 1vh;
+  text-align: center;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(14px, 1.1vw, 20px);
+}
+.fo-minlag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0.6vw 1vh;
+  padding: 1vh 0.4vw;
+  border-radius: 10px;
+  font-size: clamp(11px, 0.8vw, 15px);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+.fo-minlag:hover,
+.fo-minlag.vald {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+.fo-minlag img {
+  width: clamp(28px, 2.2vw, 40px);
+  height: clamp(28px, 2.2vw, 40px);
+  object-fit: contain;
+}
+.fo-knapp {
+  margin: 1.5vh 0.6vw;
+  padding: 1vh 0.4vw;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  font-size: clamp(11px, 0.85vw, 16px);
+  cursor: pointer;
+  user-select: none;
+}
+.fo-knapp:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Välj lag: ligaflikar och lagrutnät */
+.fo-flikar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 2vh 2vw 1vh;
+}
+.fo-flik {
+  padding: 0.6vh 0.8vw;
+  border-radius: 999px;
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: clamp(11px, 0.85vw, 16px);
+  cursor: pointer;
+  user-select: none;
+}
+.fo-flik:hover,
+.fo-flik.vald {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+.fo-lagval {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 1vh 0.8vw;
+  margin: 1vh 2vw 2vh;
+}
+.fo-lagkort {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 1.2vh 0.5vw;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: clamp(11px, 0.85vw, 16px);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+.fo-lagkort:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.fo-lagkort.foljs {
+  outline: 2px solid var(--farg-accent);
+}
+.fo-lagkort img {
+  width: clamp(32px, 2.4vw, 44px);
+  height: clamp(32px, 2.4vw, 44px);
+  object-fit: contain;
+}
+
+/* Ett lags sida */
+.fo-lagrubrik {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.fo-lagrubrik img {
+  width: 1.3em;
+  height: 1.3em;
+  object-fit: contain;
+}
+.fo-sluta {
+  width: fit-content;
+  margin: 0.5vh auto 0;
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.8vw, 15px);
+  cursor: pointer;
+  user-select: none;
+}
+.fo-sluta:hover {
+  color: var(--farg-text);
+  text-decoration: underline;
+}
+.fo-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 2.5vh 2vw 0.5vh;
+}
+.fo-etikett {
+  margin-right: 6px;
+  color: var(--farg-text-dampad);
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.fo-formbricka {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.fo-formbricka.fo-res-V { background-color: #1f9d55; }
+.fo-formbricka.fo-res-O { background-color: #7a7a8c; }
+.fo-formbricka.fo-res-F { background-color: #d64545; }
+.mr-mitten.fo-res-V { color: #5ee08f; }
+.mr-mitten.fo-res-F { color: #ff8a8a; }
+.fo-placering {
+  margin: 0.5vh 2vw 0;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.fo-datum {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--farg-text-dampad);
+  font-size: clamp(11px, 0.75vw, 14px);
+  text-transform: capitalize;
+}

@@ -1177,3 +1177,54 @@ a.re-match:hover {
   color: var(--farg-text-dampad);
   text-align: left;
 }
+
+/* Skadelista på matchsidan: en kolumn per lag */
+.ma-skadelista {
+  padding-bottom: 3vh;
+}
+.ma-skadelista .mr-dag {
+  text-align: center;
+  text-transform: none;
+}
+.ma-skadekolumner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1vw;
+  margin: 0 2vw;
+}
+.ma-skadekolumn .re-turnering {
+  margin-top: 0;
+}
+.ma-skada {
+  margin-bottom: 0.8vh;
+  padding: 0.8vh 0.6vw;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.ma-skadetopp {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.ma-skadenamn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(11px, 0.85vw, 16px);
+}
+.ma-skadestatus {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: clamp(9px, 0.65vw, 12px);
+}
+.ma-skadestatus.status-i { background-color: #d64545; }
+.ma-skadestatus.status-d { background-color: #d68a1f; }
+.ma-skadestatus.status-s { background-color: #7a7a8c; }
+.ma-skadeinfo {
+  margin: 0.3vh 0 0;
+  font-size: clamp(9px, 0.65vw, 12px);
+  color: var(--farg-text-dampad);
+}

@@ -140,6 +140,97 @@ function byggUppstallning(data, match) {
   return sektion;
 }
 
+// ============================================
+// SKADELISTA
+// Kommer från Premier Leagues Fantasy-API, så den finns bara för Premier League-lag.
+// ============================================
+
+// Lagnamn utan accenter, "FC" och skiljetecken, uppdelat i ord
+function namnord(namn) {
+  return (namn || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ").replace(/\b(fc|afc)\b/g, " ").trim().split(/\s+/);
+}
+
+// Samma lag om förkortningen är lika, eller om det kortare namnet är början på det längre
+// ("Tottenham" och "Tottenham Hotspur")
+function sammaLag(skadelag, lag) {
+  if (skadelag.kort === lag.tla) return true;
+  const a = namnord(skadelag.namn);
+  return [lag.shortName, lag.name].some(function (namn) {
+    const b = namnord(namn);
+    const kort = a.length <= b.length ? a : b;
+    const lang = kort === a ? b : a;
+    return kort.every(function (ord, i) { return ord === lang[i]; });
+  });
+}
+
+// Fantasy-API:et skriver på engelska, de vanligaste orden översätts
+const SKADEORD = [
+  [/Unknown return date/i, "okänt när han är tillbaka"],
+  [/Expected back/i, "väntas tillbaka"],
+  [/(\d+)% chance of playing/i, "$1% chans att spela"],
+  [/Suspended until/i, "Avstängd till"],
+  [/Knee injury/i, "Knäskada"],
+  [/Ankle injury/i, "Fotledsskada"],
+  [/Hamstring injury/i, "Skada i baksida lår"],
+  [/Groin injury/i, "Ljumskskada"],
+  [/Calf injury/i, "Vadskada"],
+  [/Thigh injury/i, "Lårskada"],
+  [/Back injury/i, "Ryggskada"],
+  [/Foot injury/i, "Fotskada"],
+  [/Shoulder injury/i, "Axelskada"],
+  [/Muscle injury/i, "Muskelskada"],
+  [/Illness/i, "Sjuk"]
+];
+
+function oversatt(text) {
+  return SKADEORD.reduce(function (t, par) { return t.replace(par[0], par[1]); }, text || "");
+}
+
+function statusEtikett(spelare) {
+  if (spelare.status === "s") return "Avstängd";
+  if (spelare.status === "d") return "Tveksam" + (spelare.chans !== null ? " " + spelare.chans + "%" : "");
+  return "Skadad";
+}
+
+function byggSkadekolumn(lag, skador) {
+  const kolumn = skapa("div", "ma-skadekolumn");
+  kolumn.appendChild(skapa("h3", "re-turnering", lag.shortName || lag.name));
+
+  const skadelag = skador ? skador.find(function (s) { return sammaLag(s, lag); }) : null;
+  if (!skadelag) {
+    kolumn.appendChild(skapa("p", "ma-skadeinfo", "Skadelista finns bara för Premier League-lag."));
+    return kolumn;
+  }
+  if (skadelag.spelare.length === 0) {
+    kolumn.appendChild(skapa("p", "ma-skadeinfo", "Inga skadade eller avstängda spelare."));
+    return kolumn;
+  }
+  skadelag.spelare.forEach(function (spelare) {
+    const rad = skapa("div", "ma-skada");
+    const topp = skapa("div", "ma-skadetopp");
+    topp.appendChild(skapa("span", "ma-skadenamn", spelare.kortnamn || spelare.namn));
+    topp.appendChild(skapa("span", "ma-skadestatus status-" + spelare.status, statusEtikett(spelare)));
+    rad.appendChild(topp);
+    if (spelare.nyhet) rad.appendChild(skapa("div", "ma-skadeinfo", oversatt(spelare.nyhet)));
+    rad.title = spelare.namn;
+    kolumn.appendChild(rad);
+  });
+  return kolumn;
+}
+
+// Skadelistan visas bara inför och under matchen, för den visar dagens skador
+function byggSkadelista(skador, match) {
+  const sektion = skapa("div", "ma-skadelista");
+  if (match.status === "FINISHED") return sektion;
+  sektion.appendChild(skapa("h2", "mr-dag", "Skadelista"));
+  const kolumner = skapa("div", "ma-skadekolumner");
+  kolumner.appendChild(byggSkadekolumn(match.homeTeam, skador));
+  kolumner.appendChild(byggSkadekolumn(match.awayTeam, skador));
+  sektion.appendChild(kolumner);
+  return sektion;
+}
+
 // Högra rutan: avbytarna för båda lagen
 function visaAvbytare(data, match) {
   const sidokort = document.getElementById("sidokort");
@@ -174,9 +265,10 @@ async function visaMatch() {
     kort.appendChild(skapa("p", "mr-meddelande", "Hämtar matchen..."));
   }
 
-  const [match, uppstallning] = await Promise.all([
+  const [match, uppstallning, skador] = await Promise.all([
     hamtaFranApi("/matches/" + id),
-    hamtaFranApi("/uppstallning?id=" + id)
+    hamtaFranApi("/uppstallning?id=" + id),
+    hamtaFranApi("/skador")
   ]);
 
   if (!match) {
@@ -189,7 +281,7 @@ async function visaMatch() {
 
   document.title = "JodaFoot – " + (match.homeTeam.shortName || match.homeTeam.name) +
     " – " + (match.awayTeam.shortName || match.awayTeam.name);
-  kort.replaceChildren(byggHuvud(match), byggUppstallning(uppstallning, match));
+  kort.replaceChildren(byggHuvud(match), byggUppstallning(uppstallning, match), byggSkadelista(skador, match));
   visaAvbytare(uppstallning, match);
 
   // Uppdatera varje minut tills matchen är slut

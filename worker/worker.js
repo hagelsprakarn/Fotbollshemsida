@@ -549,6 +549,65 @@ async function hamtaSokdata(env) {
   return { komplett: komplett, lag: Array.from(lagen.values()) };
 }
 
+// ============================================
+// SKADELISTA (från Premier Leagues Fantasy-API)
+// Fantasy-API:et har skador och avstängningar för alla Premier League-spelare.
+// Svaret är stort (nästan 2 MB), så vi letar bara upp de spelare som är
+// skadade, tveksamma eller avstängda i stället för att läsa in allt.
+// ============================================
+
+// Fantasy-API:et använder smeknamn på några lag, här står deras riktiga namn
+const FPL_NAMN = {
+  "Spurs": "Tottenham Hotspur",
+  "Man City": "Manchester City",
+  "Man Utd": "Manchester United",
+  "Nott'm Forest": "Nottingham Forest",
+  "Wolves": "Wolverhampton Wanderers"
+};
+
+async function hamtaSkador() {
+  const svar = await fetch("https://fantasy.premierleague.com/api/bootstrap-static/", {
+    headers: { "User-Agent": "Mozilla/5.0 Fotbollshemsida" }
+  });
+  if (!svar.ok) throw new Error("Fantasy-API:et svarade med " + svar.status);
+  const text = await svar.text();
+
+  // Lagen: "teams":[{..."id":1,..."name":"Arsenal",..."short_name":"ARS",...}, ...]
+  const lagDel = text.slice(text.indexOf('"teams":['), text.indexOf('"total_players"'));
+  const lag = {};
+  const lagTraff = /"id":(\d+),[^{}]*?"name":"([^"]+)"[^{}]*?"short_name":"([^"]+)"/g;
+  let traff;
+  while ((traff = lagTraff.exec(lagDel)) !== null) {
+    lag[traff[1]] = { namn: FPL_NAMN[traff[2]] || traff[2], kort: traff[3], spelare: [] };
+  }
+
+  // Spelarna: dela upp listan i en bit per spelare och läs bara de som inte är friska.
+  // Status: i = skadad, d = tveksam, s = avstängd (u = har lämnat klubben, dem hoppar vi över)
+  // Spelarlistan ligger sist i svaret. Varje spelare börjar med "can_transact", så vi
+  // delar där (spelarna har egna små listor inuti, så "},{" går inte att dela på).
+  const spelarDel = text.slice(text.lastIndexOf('"elements":['));
+  const bitar = spelarDel.slice(spelarDel.indexOf("[{") + 2, spelarDel.lastIndexOf("}]")).split(/\},\{"can_transact":/);
+  bitar.forEach(function (bit, i) {
+    if (!/"status":"[ids]"/.test(bit)) return;
+    let spelare;
+    try {
+      spelare = JSON.parse("{" + (i > 0 ? '"can_transact":' : "") + bit + "}");
+    } catch (fel) {
+      return;
+    }
+    if (!lag[spelare.team]) return;
+    lag[spelare.team].spelare.push({
+      namn: (spelare.first_name + " " + spelare.second_name).trim(),
+      kortnamn: spelare.web_name,
+      status: spelare.status,
+      chans: spelare.chance_of_playing_next_round,
+      nyhet: spelare.news,
+      datum: spelare.news_added
+    });
+  });
+  return Object.values(lag);
+}
+
 function corsHeaders(origin) {
   const tillaten = TILLATNA_ADRESSER.includes(origin) ? origin : TILLATNA_ADRESSER[0];
   return {
@@ -582,6 +641,29 @@ export default {
       if (!svar) {
         svar = new Response(JSON.stringify(await hamtaNyheter()), {
           headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
+    // /skador ger skadade, tveksamma och avstängda spelare i alla Premier League-lag, sparade i 30 minuter
+    if (url.pathname === "/skador") {
+      const cacheNyckel = new Request("https://cache.lokal/skador");
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let data;
+        try {
+          data = await hamtaSkador();
+        } catch (fel) {
+          return new Response("Kunde inte hämta skador", { status: 502, headers: headers });
+        }
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=1800" }
         });
         ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
       }

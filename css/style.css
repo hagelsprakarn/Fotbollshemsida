@@ -380,6 +380,29 @@ body.startsida {
   overflow: hidden;
 }
 
+/* Övergångsnyheter i högra rutan */
+.ov-nyhet {
+  display: block;
+  margin: 0 0.6vw 0.8vh;
+  padding: 0.8vh 0.6vw;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--farg-text);
+  text-decoration: none;
+}
+.ov-nyhet:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.ov-kalla {
+  font-size: clamp(9px, 0.65vw, 12px);
+  color: var(--farg-text-dampad);
+}
+.ov-rubrik {
+  margin-top: 0.2vh;
+  font-size: clamp(11px, 0.8vw, 15px);
+  line-height: 1.25;
+}
+
 /* ============================================
    LIGOR OCH TABELLER
    ============================================ */

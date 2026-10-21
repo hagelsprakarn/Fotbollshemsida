@@ -51,7 +51,8 @@ function tolkaDatum(text) {
   return isNaN(tid) ? 0 : tid;
 }
 
-async function hamtaFlode(flode) {
+// "max" är hur många inlägg vi tar från källan
+async function hamtaFlode(flode, max) {
   try {
     const svar = await fetch(flode.url, { headers: { "User-Agent": "Mozilla/5.0 Fotbollshemsida" } });
     if (!svar.ok) return [];
@@ -71,17 +72,54 @@ async function hamtaFlode(flode) {
       };
     }).filter(function (n) { return n.rubrik && n.lank; })
       .sort(function (a, b) { return b.tid - a.tid; })
-      .slice(0, 8);   // högst 8 per källa, så ingen källa tar över listan
+      .slice(0, max);
   } catch (fel) {
     return [];   // om en källa krånglar visar vi bara de andra
   }
 }
 
 async function hamtaNyheter() {
-  const listor = await Promise.all(NYHETSFLODEN.map(hamtaFlode));
+  // Högst 8 per källa, så ingen källa tar över listan
+  const listor = await Promise.all(NYHETSFLODEN.map(function (flode) { return hamtaFlode(flode, 8); }));
   return listor.flat()
     .sort(function (a, b) { return b.tid - a.tid; })   // senaste först
     .slice(0, 40);
+}
+
+// ============================================
+// ÖVERGÅNGSNYHETER (högra rutan på Nyheter-sidan)
+// Det finns ingen gratis källa med en färsk lista över övergångar, så vi tar
+// nyheter om övergångar: de särskilda övergångsflödena plus de vanliga
+// nyhetsflödena, där vi bara behåller artiklar som handlar om övergångar.
+// ============================================
+
+const OVERGANGSFLODEN = NYHETSFLODEN.concat([
+  { kalla: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/football/transfers/rss.xml" },
+  { kalla: "The Guardian", url: "https://www.theguardian.com/football/transfer-window/rss" },
+  { kalla: "Football365", url: "https://www.football365.com/transfer-gossip/feed" }
+]);
+
+// Ord i rubriken som visar att en artikel handlar om en övergång (engelska och svenska).
+// Vi tittar bara på rubriken, ingressen ger för många träffar som inte handlar om övergångar.
+const OVERGANGSORD = /transfer|\bsign(s|ed|ing|ings)?\b|\bloan|\bdeal\b|\bjoins?\b|contract|övergång|värv|klar för|lämnar|lånas|skriver på|förlänger/i;
+// ...men inte avtal som inte handlar om spelare, t.ex. TV-avtal
+const INTE_OVERGANG = /\bTV\b|broadcast|sponsor|\bkit\b/i;
+
+async function hamtaOvergangar() {
+  const listor = await Promise.all(OVERGANGSFLODEN.map(function (flode) { return hamtaFlode(flode, 50); }));
+  const sedda = new Set();
+  return listor.flat()
+    .filter(function (n) { return OVERGANGSORD.test(n.rubrik) && !INTE_OVERGANG.test(n.rubrik); })
+    // Bara de senaste 45 dagarna, gamla övergångsfönster är inte intressanta
+    .filter(function (n) { return Date.now() - n.tid < 45 * 24 * 60 * 60 * 1000; })
+    // Samma artikel kan finnas i två flöden (t.ex. BBC:s vanliga och övergångsflödet)
+    .filter(function (n) {
+      if (sedda.has(n.lank)) return false;
+      sedda.add(n.lank);
+      return true;
+    })
+    .sort(function (a, b) { return b.tid - a.tid; })   // senaste först
+    .slice(0, 25);
 }
 
 // ============================================
@@ -313,6 +351,23 @@ export default {
       if (!svar) {
         svar = new Response(JSON.stringify(await hamtaNyheter()), {
           headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
+    // /overgangar ger de senaste nyheterna om övergångar, sparade i 2 minuter
+    if (url.pathname === "/overgangar") {
+      const cacheNyckel = new Request("https://cache.lokal/overgangar");
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        svar = new Response(JSON.stringify(await hamtaOvergangar()), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=120" }
         });
         ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
       }

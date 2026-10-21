@@ -110,3 +110,47 @@ function delaUppISidor(lista, kort) {
 }
 
 visaNyheter();
+
+// ============================================
+// ÖVERGÅNGAR (högra rutan)
+// De senaste nyheterna om övergångar. Rutan hämtar nya varannan minut,
+// så att nya övergångar dyker upp utan att man laddar om sidan.
+// ============================================
+
+function byggOvergang(nyhet) {
+  const rad = skapa("a", "ov-nyhet");
+  rad.href = nyhet.lank;
+  rad.target = "_blank";
+  rad.rel = "noopener";
+  rad.appendChild(skapa("div", "ov-kalla", nyhet.kalla + " · " + hurLangeSedan(nyhet.tid)));
+  rad.appendChild(skapa("div", "ov-rubrik", nyhet.rubrik));
+  return rad;
+}
+
+async function visaOvergangar() {
+  const sidokort = document.getElementById("sidokort");
+  if (!sidokort) return;
+
+  const overgangar = await hamtaFranApi("/overgangar");
+
+  // Misslyckas en uppdatering behåller vi det som redan visas
+  if (!overgangar && sidokort.children.length > 0) return;
+
+  sidokort.replaceChildren(skapa("h2", "fo-sidorubrik", "Övergångar"));
+
+  if (!overgangar) {
+    sidokort.appendChild(skapa("p", "re-meddelande", "Kunde inte hämta övergångar."));
+    return;
+  }
+  if (overgangar.length === 0) {
+    sidokort.appendChild(skapa("p", "re-meddelande", "Inga övergångsnyheter just nu."));
+    return;
+  }
+
+  overgangar.forEach(function (nyhet) {
+    sidokort.appendChild(byggOvergang(nyhet));
+  });
+}
+
+visaOvergangar();
+setInterval(visaOvergangar, 120000);

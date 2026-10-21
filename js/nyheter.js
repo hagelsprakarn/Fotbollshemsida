@@ -121,7 +121,7 @@ visaNyheter();
 const OVERGANGSLIGOR = ["PL", "PD", "BL1", "SA", "FL1"];
 
 // Wikipedia skriver avgiften på engelska
-const AVGIFTER = { Undisclosed: "Okänd summa", Free: "Gratis", Loan: "Lån", Unattached: "Klubblös" };
+const AVGIFTER = { Undisclosed: "Okänd summa", Free: "Gratis", Loan: "Lån" };
 
 function svenska(text) {
   return AVGIFTER[text] || text;
@@ -161,7 +161,7 @@ function byggOvergang(overgang) {
   text.appendChild(till);
 
   // "från Lazio · Lån · 28 sep."
-  const detaljer = ["från " + svenska(overgang.fran)];
+  const detaljer = [overgang.fran === "Unattached" ? "var klubblös" : "från " + overgang.fran];
   if (overgang.avgift) detaljer.push(svenska(overgang.avgift));
   if (overgang.datum) {
     detaljer.push(new Date(overgang.datum).toLocaleDateString("sv-SE", { day: "numeric", month: "short" }));

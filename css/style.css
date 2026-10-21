@@ -380,27 +380,59 @@ body.startsida {
   overflow: hidden;
 }
 
-/* Övergångsnyheter i högra rutan */
-.ov-nyhet {
-  display: block;
+/* Övergångar i högra rutan: ansikte, namn och pil till nya klubben */
+.ov-rad {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0.6vw 0.8vh;
   padding: 0.8vh 0.6vw;
   border-radius: 10px;
   background-color: rgba(0, 0, 0, 0.2);
-  color: var(--farg-text);
-  text-decoration: none;
 }
-.ov-nyhet:hover {
-  background-color: rgba(0, 0, 0, 0.35);
+.ov-ansikte {
+  flex-shrink: 0;
+  width: clamp(32px, 2.4vw, 44px);
+  height: clamp(32px, 2.4vw, 44px);
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background-color: var(--farg-yta);
+  object-fit: cover;
+  object-position: top;
 }
-.ov-kalla {
-  font-size: clamp(9px, 0.65vw, 12px);
-  color: var(--farg-text-dampad);
+.ov-initialer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(10px, 0.75vw, 14px);
 }
-.ov-rubrik {
-  margin-top: 0.2vh;
+.ov-text {
+  min-width: 0;
+}
+.ov-spelare {
   font-size: clamp(11px, 0.8vw, 15px);
-  line-height: 1.25;
+  line-height: 1.2;
+}
+.ov-till {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(10px, 0.75vw, 14px);
+  line-height: 1.2;
+}
+.ov-till img {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.ov-pil {
+  color: var(--farg-accent);
+  font-weight: bold;
+}
+.ov-detaljer {
+  font-size: clamp(9px, 0.6vw, 12px);
+  color: var(--farg-text-dampad);
 }
 
 /* ============================================

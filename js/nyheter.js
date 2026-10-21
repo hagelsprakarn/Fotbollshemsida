@@ -113,17 +113,62 @@ visaNyheter();
 
 // ============================================
 // ÖVERGÅNGAR (högra rutan)
-// De senaste nyheterna om övergångar. Rutan hämtar nya varannan minut,
-// så att nya övergångar dyker upp utan att man laddar om sidan.
+// De senaste övergångarna i topp 5-ligorna: spelarens ansikte och namn,
+// och en pil till den nya klubben. Datan kommer från Wikipedias
+// övergångslistor via mellanhanden. Rutan hämtar nya var femte minut.
 // ============================================
 
-function byggOvergang(nyhet) {
-  const rad = skapa("a", "ov-nyhet");
-  rad.href = nyhet.lank;
-  rad.target = "_blank";
-  rad.rel = "noopener";
-  rad.appendChild(skapa("div", "ov-kalla", nyhet.kalla + " · " + hurLangeSedan(nyhet.tid)));
-  rad.appendChild(skapa("div", "ov-rubrik", nyhet.rubrik));
+const OVERGANGSLIGOR = ["PL", "PD", "BL1", "SA", "FL1"];
+
+// Wikipedia skriver avgiften på engelska
+const AVGIFTER = { Undisclosed: "Okänd summa", Free: "Gratis", Loan: "Lån", Unattached: "Klubblös" };
+
+function svenska(text) {
+  return AVGIFTER[text] || text;
+}
+
+// Spelarens ansikte. Hittas ingen bild visas initialerna i stället.
+function byggOvergangsAnsikte(overgang) {
+  const bild = document.createElement("img");
+  bild.className = "ov-ansikte";
+  bild.alt = "";
+  bild.onerror = function () {
+    const initialer = overgang.spelare.split(" ").map(function (ord) { return ord[0]; }).join("").slice(0, 2);
+    bild.replaceWith(skapa("div", "ov-ansikte ov-initialer", initialer));
+  };
+  bild.src = API_BAS_URL + "/spelarbild?namn=" + encodeURIComponent(overgang.spelare) +
+    "&lag=" + encodeURIComponent(overgang.till);
+  return bild;
+}
+
+function byggOvergang(overgang) {
+  const rad = skapa("div", "ov-rad");
+  rad.appendChild(byggOvergangsAnsikte(overgang));
+
+  const text = skapa("div", "ov-text");
+  text.appendChild(skapa("div", "ov-spelare", overgang.spelare));
+
+  // "→ [märke] Ny klubb"
+  const till = skapa("div", "ov-till");
+  till.appendChild(skapa("span", "ov-pil", "→"));
+  if (overgang.tillLogga) {
+    const logga = document.createElement("img");
+    logga.src = overgang.tillLogga;
+    logga.alt = "";
+    till.appendChild(logga);
+  }
+  till.appendChild(skapa("span", "", overgang.till));
+  text.appendChild(till);
+
+  // "från Lazio · Lån · 28 sep."
+  const detaljer = ["från " + svenska(overgang.fran)];
+  if (overgang.avgift) detaljer.push(svenska(overgang.avgift));
+  if (overgang.datum) {
+    detaljer.push(new Date(overgang.datum).toLocaleDateString("sv-SE", { day: "numeric", month: "short" }));
+  }
+  text.appendChild(skapa("div", "ov-detaljer", detaljer.join(" · ")));
+
+  rad.appendChild(text);
   return rad;
 }
 
@@ -131,26 +176,28 @@ async function visaOvergangar() {
   const sidokort = document.getElementById("sidokort");
   if (!sidokort) return;
 
-  const overgangar = await hamtaFranApi("/overgangar");
+  // En fråga per liga, samtidigt
+  const listor = await Promise.all(OVERGANGSLIGOR.map(function (liga) {
+    return hamtaFranApi("/overgangar?liga=" + liga);
+  }));
+  const overgangar = listor.filter(Boolean).flat()
+    .sort(function (a, b) { return b.datum - a.datum; })   // senaste först
+    .slice(0, 30);
 
   // Misslyckas en uppdatering behåller vi det som redan visas
-  if (!overgangar && sidokort.children.length > 0) return;
+  if (overgangar.length === 0 && sidokort.children.length > 0) return;
 
   sidokort.replaceChildren(skapa("h2", "fo-sidorubrik", "Övergångar"));
 
-  if (!overgangar) {
+  if (overgangar.length === 0) {
     sidokort.appendChild(skapa("p", "re-meddelande", "Kunde inte hämta övergångar."));
     return;
   }
-  if (overgangar.length === 0) {
-    sidokort.appendChild(skapa("p", "re-meddelande", "Inga övergångsnyheter just nu."));
-    return;
-  }
 
-  overgangar.forEach(function (nyhet) {
-    sidokort.appendChild(byggOvergang(nyhet));
+  overgangar.forEach(function (overgang) {
+    sidokort.appendChild(byggOvergang(overgang));
   });
 }
 
 visaOvergangar();
-setInterval(visaOvergangar, 120000);
+setInterval(visaOvergangar, 300000);

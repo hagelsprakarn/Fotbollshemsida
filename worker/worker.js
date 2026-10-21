@@ -87,39 +87,223 @@ async function hamtaNyheter() {
 }
 
 // ============================================
-// ÖVERGÅNGSNYHETER (högra rutan på Nyheter-sidan)
-// Det finns ingen gratis källa med en färsk lista över övergångar, så vi tar
-// nyheter om övergångar: de särskilda övergångsflödena plus de vanliga
-// nyhetsflödena, där vi bara behåller artiklar som handlar om övergångar.
+// ÖVERGÅNGAR (högra rutan på Nyheter-sidan)
+// Det finns ingen gratis API med färska övergångar, men Wikipedia har listor
+// över alla övergångar i varje liga ("List of English football transfers summer 2026").
+// Vi läser de listorna och plockar ut spelare, gammal klubb och ny klubb.
 // ============================================
 
-const OVERGANGSFLODEN = NYHETSFLODEN.concat([
-  { kalla: "BBC Sport", url: "https://feeds.bbci.co.uk/sport/football/transfers/rss.xml" },
-  { kalla: "The Guardian", url: "https://www.theguardian.com/football/transfer-window/rss" },
-  { kalla: "Football365", url: "https://www.football365.com/transfer-gossip/feed" }
-]);
+// För varje liga: vad den heter i Wikipedias sidnamn och hos ESPN (för klubbmärkena)
+const OVERGANGSLIGOR = {
+  PL: { wiki: "English", espn: "eng.1" },
+  PD: { wiki: "Spanish", espn: "esp.1" },
+  BL1: { wiki: "German", espn: "ger.1" },
+  SA: { wiki: "Italian", espn: "ita.1" },
+  FL1: { wiki: "French", espn: "fra.1" }
+};
 
-// Ord i rubriken som visar att en artikel handlar om en övergång (engelska och svenska).
-// Vi tittar bara på rubriken, ingressen ger för många träffar som inte handlar om övergångar.
-const OVERGANGSORD = /transfer|\bsign(s|ed|ing|ings)?\b|\bloan|\bdeal\b|\bjoins?\b|contract|övergång|värv|klar för|lämnar|lånas|skriver på|förlänger/i;
-// ...men inte avtal som inte handlar om spelare, t.ex. TV-avtal
-const INTE_OVERGANG = /\bTV\b|broadcast|sponsor|\bkit\b/i;
+// Wikipedia vill att man talar om vem som frågar
+const WIKI_HUVUD = { "User-Agent": "JodaFoot/1.0 (https://hagelsprakarn.github.io/Fotbollshemsida/)" };
 
-async function hamtaOvergangar() {
-  const listor = await Promise.all(OVERGANGSFLODEN.map(function (flode) { return hamtaFlode(flode, 50); }));
+// Sidorna för det senaste sommarfönstret och för vinterfönstret, t.ex.
+// "...summer 2026" och "...winter 2026–27"
+function wikiSidor(land) {
+  const nu = new Date();
+  const ar = nu.getUTCFullYear();
+  const manad = nu.getUTCMonth() + 1;
+  const sommar = manad >= 6 ? ar : ar - 1;
+  const vinterStart = manad >= 7 ? ar : ar - 1;
+  const vinter = vinterStart + "–" + String((vinterStart + 1) % 100).padStart(2, "0");
+  return [
+    "List of " + land + " football transfers summer " + sommar,
+    "List of " + land + " football transfers winter " + vinter
+  ];
+}
+
+// Hämtar första avsnittet av en Wikipedia-sida som råtext (wikitext).
+// Första avsnittet är högstaligan. Finns inte sidan än blir det en tom text.
+async function hamtaWiki(titel) {
+  const adress = "https://en.wikipedia.org/w/index.php?action=raw&section=1&title=" + encodeURIComponent(titel.replace(/ /g, "_"));
+  const svar = await fetch(adress, { headers: WIKI_HUVUD });
+  return svar.ok ? svar.text() : "";
+}
+
+// Gör om wikitext till vanlig text: tar bort fotnoter, flaggor och länkar
+function rensaWiki(text) {
+  let rensad = (text || "")
+    .replace(/<ref[^>]*\/>/g, "")
+    .replace(/<ref[\s\S]*?<\/ref>/g, "");
+  // Mallar kan ligga i varandra, t.ex. {{Sort|Alaba, David|{{flagicon|AUT}} [[David Alaba]]}},
+  // så vi tar bort de innersta först och upprepar tills inga finns kvar
+  let forra;
+  do {
+    forra = rensad;
+    rensad = rensad
+      .replace(/\{\{sortname\|([^|{}]*)\|([^|{}]*)[^{}]*\}\}/gi, "$1 $2")
+      .replace(/\{\{sort\|[^|{}]*\|([^{}]*)\}\}/gi, "$1")
+      .replace(/\{\{(?!sort)[^{}]*\}\}/gi, "");
+  } while (rensad !== forra);
+  return rensad
+    .replace(/\{\{[^{}]*\}\}/g, "")
+    .replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, "$1")
+    .replace(/'''?/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Datum som "1 September 2026", "2026-09-01" eller {{dts|2026|9|1}}
+function tolkaWikiDatum(text) {
+  const dts = (text || "").match(/\{\{dts\|(?:[^|{}]*=[^|{}]*\|)*(\d{4})\|(\d{1,2})\|(\d{1,2})/i);
+  if (dts) return Date.UTC(Number(dts[1]), Number(dts[2]) - 1, Number(dts[3]));
+  // Räkna datumet i UTC, annars kan "1 September" bli 31 augusti beroende på tidszon
+  const rensad = rensaWiki(text);
+  const tid = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(rensad) ? rensad : rensad + " UTC");
+  return isNaN(tid) ? 0 : tid;
+}
+
+// England och Italien: en stor tabell med Datum | Spelare | Från | Till | Avgift.
+// Raderna står i datumordning, så vi läser bakifrån och tar bara de senaste.
+// Har en rad inget datum gäller datumet från raden ovanför (rowspan).
+function lasTabell(text, max) {
+  const rader = text.split(/\n\|-/).slice(1);
+  const resultat = [];
+  let vantar = [];
+  for (let i = rader.length - 1; i >= 0 && (resultat.length < max || vantar.length > 0); i--) {
+    // En cell per textrad. Inställningar som rowspan="55" före cellens innehåll tas bort.
+    const celler = [];
+    rader[i].split("\n").forEach(function (rad) {
+      if (!rad.startsWith("|") || rad.startsWith("|}") || rad.startsWith("|-")) return;
+      celler.push(rad.slice(1).replace(/^\s*(rowspan|style|align|data-sort-value)[^|[{]*\|/i, ""));
+    });
+    if (celler.length < 4) continue;
+    const harDatum = celler.length >= 5;
+    if (!harDatum) celler.unshift("");
+    const overgang = {
+      spelare: rensaWiki(celler[1]),
+      fran: rensaWiki(celler[2]),
+      till: rensaWiki(celler[3]),
+      avgift: rensaWiki(celler[4]),
+      datum: 0
+    };
+    if (!overgang.spelare || !overgang.till) continue;
+    if (harDatum) {
+      overgang.datum = tolkaWikiDatum(celler[0]);
+      vantar.forEach(function (v) { v.datum = overgang.datum; });
+      vantar = [];
+    } else {
+      vantar.push(overgang);
+    }
+    resultat.push(overgang);
+  }
+  return resultat;
+}
+
+// Spanien, Tyskland och Frankrike: en lista per klubb med "In" och "Out".
+// Varje spelare står som {{fs player|...|name=[[Namn]]|other=from [[Klubb]]}}
+// och datumet finns i fotnoten efter.
+function lasKlubblistor(text) {
+  const resultat = [];
+  text.split(/\n===/).slice(1).forEach(function (del) {
+    const klubb = rensaWiki(del.slice(0, del.indexOf("===")));
+    let lista = -1;   // 0 = In (spelare som kommer), 1 = Out (spelare som går)
+    del.split("\n").forEach(function (rad) {
+      if (/\{\{fs start/i.test(rad)) {
+        lista++;
+        return;
+      }
+      const namn = rad.match(/\{\{fs player[^\n]*?\|\s*name\s*=\s*(\[\[[^\]]*\]\]|[^|}]*)/i);
+      if (!namn) return;
+      const annat = rensaWiki((rad.match(/\|\s*other\s*=\s*(.*?)\}\}(?:<ref|\s*$)/i) || [])[1]);
+      // "from Barcelona", "to Liverpool", "on loan to Espanyol". "loan return" och "Released" hoppar vi över.
+      const riktning = annat.match(/^(on loan )?(from|to) ([^,(]+)/i);
+      if (!riktning) return;
+      const fran = riktning[2].toLowerCase() === "from";
+      if ((lista === 0) !== fran) return;
+      const datum = rad.match(/\|\s*date\s*=\s*([^|}]+)/i);
+      resultat.push({
+        spelare: rensaWiki(namn[1]),
+        fran: fran ? riktning[3].trim() : klubb,
+        till: fran ? klubb : riktning[3].trim(),
+        avgift: riktning[1] ? "Loan" : "",
+        datum: datum ? tolkaWikiDatum(datum[1]) : 0
+      });
+    });
+  });
+  return resultat;
+}
+
+// Klubbarna i en liga från ESPN (namn och klubbmärke), sparade ett dygn
+async function hamtaEspnLag(slug, ctx) {
+  const cacheNyckel = new Request("https://cache.lokal/espnlag/" + slug);
+  const sparad = await caches.default.match(cacheNyckel);
+  if (sparad) return sparad.json();
+  const data = await hamtaEspn("/" + slug + "/teams");
+  const lag = data.sports[0].leagues[0].teams.map(function (t) {
+    return { namn: t.team.displayName, kort: t.team.shortDisplayName, logga: t.team.logos ? t.team.logos[0].href : "" };
+  });
+  ctx.waitUntil(caches.default.put(cacheNyckel, new Response(JSON.stringify(lag), {
+    headers: { "Cache-Control": "public, max-age=86400" }
+  })));
+  return lag;
+}
+
+// Strängare än liknar(): det kortare namnet måste vara början på det längre,
+// t.ex. "Brighton" och "Brighton & Hove Albion". "Wigan Athletic" får inte bli
+// Athletic Bilbao och "Manchester United" får inte bli Manchester City.
+function sammaKlubb(a, b) {
+  const ordA = normalisera(a).split(" ");
+  const ordB = normalisera(b).split(" ");
+  const kort = ordA.length <= ordB.length ? ordA : ordB;
+  const lang = kort === ordA ? ordB : ordA;
+  return kort[0] !== "" && kort.every(function (ord, i) { return ord === lang[i]; });
+}
+
+async function hamtaOvergangar(kod, ctx) {
+  const liga = OVERGANGSLIGOR[kod];
+  const sidor = await Promise.all(wikiSidor(liga.wiki).map(hamtaWiki));
+  // Klubbmärken från alla fem ligorna, så att t.ex. en övergång från PSG till Liverpool får Liverpools märke
+  const koder = Object.keys(OVERGANGSLIGOR);
+  const laglistor = await Promise.all(koder.map(function (k) {
+    return hamtaEspnLag(OVERGANGSLIGOR[k].espn, ctx).catch(function () { return []; });
+  }));
+  const allaLag = laglistor.flat();
+  const ligansLag = laglistor[koder.indexOf(kod)];
+
+  function hittaLag(namn, lista) {
+    return lista.find(function (l) { return sammaKlubb(namn, l.namn) || sammaKlubb(namn, l.kort); });
+  }
+
+  let overgangar = [];
+  sidor.forEach(function (text) {
+    if (!text) return;
+    if (/\{\{fs player/i.test(text)) {
+      overgangar = overgangar.concat(lasKlubblistor(text));
+    } else {
+      // Tabellen tar med lägre divisioner också, vi behåller bara de som rör högstaligan
+      overgangar = overgangar.concat(lasTabell(text, 120).filter(function (o) {
+        return hittaLag(o.fran, ligansLag) || hittaLag(o.till, ligansLag);
+      }));
+    }
+  });
+
+  // En övergång mellan två klubbar i samma liga står både som In och Out
   const sedda = new Set();
-  return listor.flat()
-    .filter(function (n) { return OVERGANGSORD.test(n.rubrik) && !INTE_OVERGANG.test(n.rubrik); })
-    // Bara de senaste 45 dagarna, gamla övergångsfönster är inte intressanta
-    .filter(function (n) { return Date.now() - n.tid < 45 * 24 * 60 * 60 * 1000; })
-    // Samma artikel kan finnas i två flöden (t.ex. BBC:s vanliga och övergångsflödet)
-    .filter(function (n) {
-      if (sedda.has(n.lank)) return false;
-      sedda.add(n.lank);
+  return overgangar
+    .filter(function (o) {
+      const nyckel = normalisera(o.spelare) + "|" + normalisera(o.till);
+      if (sedda.has(nyckel)) return false;
+      sedda.add(nyckel);
       return true;
     })
-    .sort(function (a, b) { return b.tid - a.tid; })   // senaste först
-    .slice(0, 25);
+    .sort(function (a, b) { return b.datum - a.datum; })   // senaste först
+    .slice(0, 15)
+    .map(function (o) {
+      const nyKlubb = hittaLag(o.till, allaLag);
+      o.tillLogga = nyKlubb ? nyKlubb.logga : "";
+      o.liga = kod;
+      return o;
+    });
 }
 
 // ============================================
@@ -361,13 +545,24 @@ export default {
       return svar;
     }
 
-    // /overgangar ger de senaste nyheterna om övergångar, sparade i 2 minuter
+    // /overgangar?liga=PL ger de senaste övergångarna i en liga, sparade i 15 minuter.
+    // En liga per anrop, så att varje anrop bara behöver läsa en Wikipedia-sida.
     if (url.pathname === "/overgangar") {
-      const cacheNyckel = new Request("https://cache.lokal/overgangar");
+      const kod = url.searchParams.get("liga") || "";
+      if (!OVERGANGSLIGOR[kod]) {
+        return new Response("Okänd liga", { status: 400, headers: headers });
+      }
+      const cacheNyckel = new Request("https://cache.lokal/overgangar/" + kod);
       let svar = await caches.default.match(cacheNyckel);
       if (!svar) {
-        svar = new Response(JSON.stringify(await hamtaOvergangar()), {
-          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=120" }
+        let data;
+        try {
+          data = await hamtaOvergangar(kod, ctx);
+        } catch (fel) {
+          return new Response("Kunde inte hämta övergångar", { status: 502, headers: headers });
+        }
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=900" }
         });
         ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
       }

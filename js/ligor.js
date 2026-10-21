@@ -207,6 +207,8 @@ function visaLigor() {
     setInterval(function () { visaSenasteOmgangen(liga); }, 65000);
   } else {
     visaLigalista(huvudkort);
+    // Högra rutan används bara när en liga är vald, så den tas bort i listan
+    document.getElementById("sidokort").remove();
   }
 }
 

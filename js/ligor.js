@@ -109,6 +109,89 @@ async function visaTabell(huvudkort, liga) {
   huvudkort.appendChild(tabell);
 }
 
+// ============================================
+// SENASTE OMGÅNGEN (högra rutan när en liga är vald)
+// ============================================
+
+// Champions League har ingen omgång i slutspelet, då visar vi vilken runda det är
+const RUNDOR = {
+  PLAYOFFS: "Playoff",
+  LAST_16: "Åttondelsfinal",
+  QUARTER_FINALS: "Kvartsfinal",
+  SEMI_FINALS: "Semifinal",
+  FINAL: "Final"
+};
+
+function omgangsNamn(match) {
+  if (match.matchday && !RUNDOR[match.stage]) return "Omgång " + match.matchday;
+  return RUNDOR[match.stage] || "Senaste omgången";
+}
+
+// En rad i rutan: logga, förkortning och mål (tomt om matchen inte har börjat)
+function byggOmgangsLag(lag, mal, forlorade) {
+  const rad = skapa("div", "re-lag" + (forlorade ? " forlorade" : ""));
+  if (lag.crest) rad.appendChild(skapaLogga(lag.crest));
+  rad.appendChild(skapa("span", "re-namn", lag.tla || lag.shortName || lag.name));
+  rad.appendChild(skapa("span", "re-mal", mal === null ? "" : mal));
+  return rad;
+}
+
+// En ruta för en match. Överst står när den spelas, eller "Slut"/"Pågår".
+function byggOmgangsMatch(match) {
+  const ruta = skapa("a", "re-match");
+  ruta.href = "match.html?id=" + match.id;
+
+  let nar;
+  if (match.status === "FINISHED") nar = "Slut";
+  else if (match.status === "IN_PLAY" || match.status === "PAUSED") nar = "Pågår";
+  else nar = new Date(match.utcDate).toLocaleString("sv-SE", {
+    weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+  });
+  ruta.appendChild(skapa("div", "re-dag", nar));
+
+  const malHemma = match.score.fullTime.home;
+  const malBorta = match.score.fullTime.away;
+  ruta.appendChild(byggOmgangsLag(match.homeTeam, malHemma, match.score.winner === "AWAY_TEAM"));
+  ruta.appendChild(byggOmgangsLag(match.awayTeam, malBorta, match.score.winner === "HOME_TEAM"));
+  return ruta;
+}
+
+async function visaSenasteOmgangen(liga) {
+  const sidokort = document.getElementById("sidokort");
+  if (!sidokort) return;
+
+  // Alla säsongens matcher i ligan (sparas en minut av api.js och mellanhanden)
+  const data = await hamtaFranApi("/competitions/" + liga.kod + "/matches");
+
+  // Misslyckas en uppdatering behåller vi det som redan visas
+  if (!data && sidokort.children.length > 0) return;
+
+  sidokort.replaceChildren(skapa("h2", "fo-sidorubrik", "Senaste omgången"));
+
+  if (!data) {
+    sidokort.appendChild(skapa("p", "re-meddelande", "Kunde inte hämta omgången."));
+    return;
+  }
+
+  // Den senast spelade matchen bestämmer vilken omgång som är "senaste"
+  const spelade = data.matches.filter(function (m) { return m.status === "FINISHED"; });
+  if (spelade.length === 0) {
+    sidokort.appendChild(skapa("p", "re-meddelande", "Inga matcher spelade än den här säsongen."));
+    return;
+  }
+  const senaste = spelade.reduce(function (a, b) { return a.utcDate > b.utcDate ? a : b; });
+
+  // Hela omgången, även matcher som inte är spelade än, i tidsordning
+  const omgangen = data.matches.filter(function (m) {
+    return m.stage === senaste.stage && m.matchday === senaste.matchday;
+  }).sort(function (a, b) { return a.utcDate.localeCompare(b.utcDate); });
+
+  sidokort.appendChild(skapa("h3", "re-turnering", omgangsNamn(senaste)));
+  omgangen.forEach(function (match) {
+    sidokort.appendChild(byggOmgangsMatch(match));
+  });
+}
+
 function visaLigor() {
   const huvudkort = document.getElementById("liga-kort");
   if (!huvudkort) return;
@@ -119,6 +202,9 @@ function visaLigor() {
 
   if (liga) {
     visaTabell(huvudkort, liga);
+    visaSenasteOmgangen(liga);
+    // Hämta nya resultat varje minut (lite mer än API-cachens 60 sekunder)
+    setInterval(function () { visaSenasteOmgangen(liga); }, 65000);
   } else {
     visaLigalista(huvudkort);
   }

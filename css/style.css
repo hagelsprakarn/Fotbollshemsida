@@ -1019,3 +1019,161 @@ a.re-match:hover {
   text-align: right;
   color: var(--farg-text-dampad);
 }
+
+/* ============================================
+   SÖK (sok.html)
+   ============================================ */
+.sok-falt {
+  display: block;
+  width: calc(100% - 4vw);
+  margin: 2vh 2vw 1vh;
+  padding: 1.2vh 1vw;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--farg-text);
+  font-family: var(--typsnitt);
+  font-size: clamp(14px, 1.1vw, 20px);
+  outline: none;
+}
+.sok-falt::placeholder {
+  color: var(--farg-text-dampad);
+}
+.sok-falt:focus {
+  border-color: var(--farg-accent);
+}
+#sok-innehall {
+  padding-bottom: 3vh;
+}
+.sok-rad {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 2vw 1vh;
+  padding: 1vh 1vw;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  user-select: none;
+}
+.sok-rad:hover {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.sok-rad.vald {
+  outline: 2px solid var(--farg-accent);
+}
+.sok-logga {
+  width: clamp(32px, 2.4vw, 44px);
+  height: clamp(32px, 2.4vw, 44px);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.sok-ansikte {
+  flex-shrink: 0;
+  width: clamp(36px, 2.8vw, 50px);
+  height: clamp(36px, 2.8vw, 50px);
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background-color: var(--farg-yta);
+  object-fit: cover;
+  object-position: top;
+}
+.sok-initialer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(11px, 0.8vw, 15px);
+}
+.sok-text {
+  min-width: 0;
+}
+.sok-namn {
+  font-size: clamp(13px, 1vw, 19px);
+  line-height: 1.2;
+}
+.sok-info {
+  font-size: clamp(11px, 0.8vw, 15px);
+  color: var(--farg-text-dampad);
+}
+.sok-lagrad {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sok-litenlogga {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Ett lags trupp */
+.sok-laghuvud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 1vh 2vw 1vh;
+  text-align: center;
+}
+.sok-storlogga {
+  width: clamp(56px, 5vw, 96px);
+  height: clamp(56px, 5vw, 96px);
+  object-fit: contain;
+}
+.sok-lagnamn {
+  margin: 0;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(18px, 1.8vw, 34px);
+}
+.sok-tranare {
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+
+/* Spelarkortet i högra rutan */
+.sok-spelarkort {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3vh 0.8vw;
+  text-align: center;
+}
+.sok-storansikte {
+  width: clamp(80px, 7vw, 130px);
+  height: clamp(80px, 7vw, 130px);
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  background-color: rgba(0, 0, 0, 0.25);
+  object-fit: cover;
+  object-position: top;
+}
+.sok-storansikte.sok-initialer {
+  font-size: clamp(24px, 2vw, 40px);
+}
+.sok-spelarnamn {
+  margin: 1.5vh 0 0.5vh;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(15px, 1.2vw, 24px);
+  line-height: 1.2;
+}
+.sok-klubb {
+  justify-content: center;
+  margin-bottom: 2vh;
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.sok-fakta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0.8vh 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: clamp(11px, 0.8vw, 15px);
+  text-align: right;
+}
+.sok-etikett {
+  color: var(--farg-text-dampad);
+  text-align: left;
+}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JodaFoot – Sök</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="startsida">
+
+  <div class="startsida-layout">
+
+    <nav class="sidomeny">
+      <a href="foljer.html">Följer</a>
+      <a href="ligor.html">Ligor</a>
+      <a href="matcher.html">Matcher</a>
+      <a href="nyheter.html">Nyheter</a>
+      <a href="sok.html">Sök</a>
+    </nav>
+
+    <!-- Sökfältet och resultaten, eller ett lags trupp -->
+    <main class="huvudkort" id="sok-kort">
+      <h1 class="kort-rubrik">Sök</h1>
+      <input type="search" class="sok-falt" id="sok-falt" placeholder="Sök lag eller spelare, t.ex. Harry Kane" autocomplete="off">
+      <div id="sok-innehall"></div>
+    </main>
+
+    <!-- Spelarkortet för den spelare man har klickat på -->
+    <aside class="sidokort" id="sidokort"></aside>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/sok.js"></script>
+</body>
+</html>

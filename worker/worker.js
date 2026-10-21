@@ -502,6 +502,53 @@ async function hittaSpelarbild(namn, lag) {
   return spelare ? (spelare.strCutout || spelare.strThumb) : null;
 }
 
+// ============================================
+// SÖK (sok.html)
+// Alla lag i topp 5-ligorna och Champions League, med tränare och trupp,
+// samlade i ett svar så att hemsidan kan söka bland dem direkt.
+// ============================================
+
+const SOKLIGOR = ["PL", "PD", "BL1", "SA", "FL1", "CL"];
+
+async function hamtaSokdata(env) {
+  const nyckel = rensaNyckel(env.API_NYCKEL || "");
+  const svar = await Promise.all(SOKLIGOR.map(function (kod) {
+    return fetch(API_BAS_URL + "/competitions/" + kod + "/teams", { headers: { "X-Auth-Token": nyckel } })
+      .then(function (s) { return s.ok ? s.json() : null; })
+      .catch(function () { return null; });
+  }));
+
+  // Ett lag kan vara med i både sin liga och Champions League, då slås de ihop
+  const lagen = new Map();
+  let komplett = true;
+  svar.forEach(function (data) {
+    if (!data) {
+      komplett = false;
+      return;
+    }
+    data.teams.forEach(function (t) {
+      let lag = lagen.get(t.id);
+      if (!lag) {
+        lag = {
+          id: t.id,
+          namn: t.name,
+          kort: t.shortName || t.name,
+          tla: t.tla,
+          logga: t.crest,
+          ligor: [],
+          tranare: t.coach && t.coach.name ? t.coach.name : "",
+          spelare: (t.squad || []).map(function (s) {
+            return { id: s.id, namn: s.name, position: s.position || "", fodd: s.dateOfBirth || "", land: s.nationality || "" };
+          })
+        };
+        lagen.set(t.id, lag);
+      }
+      lag.ligor.push(data.competition.name);
+    });
+  });
+  return { komplett: komplett, lag: Array.from(lagen.values()) };
+}
+
 function corsHeaders(origin) {
   const tillaten = TILLATNA_ADRESSER.includes(origin) ? origin : TILLATNA_ADRESSER[0];
   return {
@@ -535,6 +582,28 @@ export default {
       if (!svar) {
         svar = new Response(JSON.stringify(await hamtaNyheter()), {
           headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=300" }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
+    // /sokdata ger alla lag och spelare för Sök-sidan. Trupper ändras sällan, så svaret
+    // sparas i 12 timmar (men bara 2 minuter om någon liga inte gick att hämta).
+    if (url.pathname === "/sokdata") {
+      const cacheNyckel = new Request("https://cache.lokal/sokdata");
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        const data = await hamtaSokdata(env);
+        svar = new Response(JSON.stringify(data), {
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "public, max-age=" + (data.komplett ? 43200 : 120)
+          }
         });
         ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
       }

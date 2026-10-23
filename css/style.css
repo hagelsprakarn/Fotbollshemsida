@@ -1302,3 +1302,18 @@ a.ma-spelare:hover .ma-namn,
 a.ma-avbytare:hover {
   text-decoration: underline;
 }
+
+/* Klubbmärken och lag som leder till lagets trupp */
+.trupp-lank {
+  cursor: pointer;
+}
+img.trupp-lank {
+  transition: transform 0.15s ease;
+}
+img.trupp-lank:hover {
+  transform: scale(1.2);
+}
+td.trupp-lank:hover span,
+.ma-lag.trupp-lank:hover .ma-lagnamn {
+  text-decoration: underline;
+}

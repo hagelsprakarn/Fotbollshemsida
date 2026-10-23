@@ -31,6 +31,7 @@ function byggMatchrad(match) {
     const logga = document.createElement("img");
     logga.src = match.homeTeam.crest;
     logga.alt = "";
+    gorTillTruppLank(logga, match.homeTeam);   // märket visar lagets trupp, resten av raden matchen
     hemma.appendChild(logga);
   }
   hemma.appendChild(lagnamn(match.homeTeam));
@@ -55,6 +56,7 @@ function byggMatchrad(match) {
     const logga = document.createElement("img");
     logga.src = match.awayTeam.crest;
     logga.alt = "";
+    gorTillTruppLank(logga, match.awayTeam);
     borta.appendChild(logga);
   }
 
@@ -135,6 +137,7 @@ function byggResultatLag(lag, mal, forlorade) {
     const logga = document.createElement("img");
     logga.src = lag.crest;
     logga.alt = "";
+    gorTillTruppLank(logga, lag);
     rad.appendChild(logga);
   }
   rad.appendChild(skapa("span", "re-namn", lag.tla || lag.shortName || lag.name));

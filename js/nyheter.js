@@ -156,6 +156,8 @@ function byggOvergang(overgang) {
     const logga = document.createElement("img");
     logga.src = overgang.tillLogga;
     logga.alt = "";
+    // Här finns bara klubbens namn (från Wikipedia), så Sök-sidan letar upp laget med namnet
+    gorTillTruppLank(logga, { namn: overgang.till });
     till.appendChild(logga);
   }
   till.appendChild(skapa("span", "", overgang.till));

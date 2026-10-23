@@ -97,6 +97,7 @@ async function visaTabell(huvudkort, liga) {
     const lag = skapa("td", "lag");
     if (rad.team.crest) lag.appendChild(skapaLogga(rad.team.crest));
     lag.appendChild(skapa("span", "", rad.team.shortName || rad.team.name));
+    gorTillTruppLank(lag, rad.team);   // klick på laget i tabellen visar truppen
     tr.appendChild(lag);
 
     [rad.playedGames, rad.won, rad.draw, rad.lost, rad.goalDifference].forEach(function (varde) {
@@ -130,7 +131,11 @@ function omgangsNamn(match) {
 // En rad i rutan: logga, förkortning och mål (tomt om matchen inte har börjat)
 function byggOmgangsLag(lag, mal, forlorade) {
   const rad = skapa("div", "re-lag" + (forlorade ? " forlorade" : ""));
-  if (lag.crest) rad.appendChild(skapaLogga(lag.crest));
+  if (lag.crest) {
+    const logga = skapaLogga(lag.crest);
+    gorTillTruppLank(logga, lag);
+    rad.appendChild(logga);
+  }
   rad.appendChild(skapa("span", "re-namn", lag.tla || lag.shortName || lag.name));
   rad.appendChild(skapa("span", "re-mal", mal === null ? "" : mal));
   return rad;

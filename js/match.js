@@ -56,6 +56,7 @@ function byggHuvud(match) {
     }
     const ruta = skapa("div", "ma-lag");
     if (lag.crest) ruta.appendChild(skapaLogga(lag));
+    gorTillTruppLank(ruta, lag);   // klick på laget (märke eller namn) visar truppen
     ruta.appendChild(skapa("div", "ma-lagnamn", lag.shortName || lag.name));
     rad.appendChild(ruta);
   });

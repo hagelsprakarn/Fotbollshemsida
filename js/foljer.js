@@ -167,8 +167,11 @@ function formatDatum(utcDate, medTid) {
 function byggLagmatch(match, lagId, spelad) {
   const rad = skapa("div", "mr-rad fo-match");
 
+  // Klubbmärkena visar lagets trupp
   const hemma = skapa("div", "mr-lag");
-  hemma.appendChild(skapaLogga(match.homeTeam.crest));
+  const hemmaLogga = skapaLogga(match.homeTeam.crest);
+  gorTillTruppLank(hemmaLogga, match.homeTeam);
+  hemma.appendChild(hemmaLogga);
   hemma.appendChild(lagnamn(match.homeTeam));
 
   let mitten;
@@ -182,7 +185,9 @@ function byggLagmatch(match, lagId, spelad) {
 
   const borta = skapa("div", "mr-lag borta");
   borta.appendChild(lagnamn(match.awayTeam));
-  borta.appendChild(skapaLogga(match.awayTeam.crest));
+  const bortaLogga = skapaLogga(match.awayTeam.crest);
+  gorTillTruppLank(bortaLogga, match.awayTeam);
+  borta.appendChild(bortaLogga);
 
   const datum = skapa("div", "fo-datum", formatDatum(match.utcDate, false) + " · " + match.competition.name);
 
@@ -197,7 +202,9 @@ async function visaLag(huvudkort, lag) {
   const rubrik = huvudkort.querySelector(".kort-rubrik");
   rubrik.textContent = "";
   rubrik.classList.add("fo-lagrubrik");
-  rubrik.appendChild(skapaLogga(lag.logga));
+  const rubrikLogga = skapaLogga(lag.logga);
+  gorTillTruppLank(rubrikLogga, { id: lag.id });
+  rubrik.appendChild(rubrikLogga);
   rubrik.appendChild(skapa("span", "", lag.namn));
 
   const sluta = skapa("div", "fo-sluta", "Sluta följa");

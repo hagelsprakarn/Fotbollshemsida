@@ -14,6 +14,27 @@ function skapa(tagg, klass, text) {
 // Alla lag (med trupp) från mellanhanden. Hämtas en gång när sidan laddas.
 let allaLag = [];
 
+// Sant om man kom till ett lags trupp från en annan sida (t.ex. genom att klicka på ett klubbmärke)
+let tillbakaTillForraSidan = false;
+
+// Hittar ett lag med namnet, t.ex. "Liverpool" -> "Liverpool FC". Det kortare namnet
+// måste vara början på det längre, så att "Manchester United" inte blir Manchester City.
+function hittaLagMedNamn(namn) {
+  if (!namn) return null;
+  function ord(text) {
+    return forenkla(text).replace(/[^a-z0-9 ]/g, " ").replace(/\b(fc|afc|cf)\b/g, " ").trim().split(/\s+/);
+  }
+  const sokOrd = ord(namn);
+  return allaLag.find(function (l) {
+    return [l.namn, l.kort].some(function (lagnamn) {
+      const lagOrd = ord(lagnamn);
+      const kort = sokOrd.length <= lagOrd.length ? sokOrd : lagOrd;
+      const lang = kort === sokOrd ? lagOrd : sokOrd;
+      return kort[0] !== "" && kort.every(function (o, i) { return o === lang[i]; });
+    });
+  }) || null;
+}
+
 // Gör söktexten jämförbar: små bokstäver och inga accenter ("Müller" hittas med "muller")
 function forenkla(text) {
   return (text || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -157,10 +178,16 @@ function visaTrupp(lag, valdSpelare) {
   innehall.replaceChildren();
   uppdateraAdress(lag, valdSpelare);
 
-  const tillbaka = skapa("a", "liga-tillbaka", "‹ Tillbaka till sökningen");
+  // Kom man hit genom att klicka på ett klubbmärke på en annan sida går "Tillbaka" dit,
+  // annars tillbaka till sökresultaten
+  const tillbaka = skapa("a", "liga-tillbaka", tillbakaTillForraSidan ? "‹ Tillbaka" : "‹ Tillbaka till sökningen");
   tillbaka.href = "#";
   tillbaka.addEventListener("click", function (e) {
     e.preventDefault();
+    if (tillbakaTillForraSidan) {
+      history.back();
+      return;
+    }
     uppdateraAdress(null, null);
     visaResultat(document.getElementById("sok-falt").value);
   });
@@ -219,18 +246,26 @@ async function startaSok() {
   allaLag = data.lag;
 
   falt.addEventListener("input", function () {
+    tillbakaTillForraSidan = false;   // nu söker man själv, då ska Tillbaka gå till sökningen
     uppdateraAdress(null, null);
     visaResultat(falt.value);
   });
 
-  // Står ett lag (och kanske en spelare) i adressen visar vi det direkt
+  // Står ett lag (och kanske en spelare) i adressen visar vi det direkt.
+  // Laget kan anges med id (?lag=81) eller med namn (?lagnamn=Liverpool).
   const parametrar = new URLSearchParams(window.location.search);
-  const lag = allaLag.find(function (l) { return String(l.id) === parametrar.get("lag"); });
+  const lag = allaLag.find(function (l) { return String(l.id) === parametrar.get("lag"); }) ||
+    hittaLagMedNamn(parametrar.get("lagnamn"));
+  const franAnnanSida = document.referrer.indexOf(window.location.host) >= 0 &&
+    document.referrer.indexOf("sok.html") < 0;
   if (lag) {
+    tillbakaTillForraSidan = franAnnanSida;
     const spelare = lag.spelare.find(function (s) { return String(s.id) === parametrar.get("spelare"); });
     visaTrupp(lag, spelare);
   } else {
-    visaResultat("");
+    // Hittades inte laget med namnet söker vi på namnet i stället
+    falt.value = parametrar.get("lagnamn") || "";
+    visaResultat(falt.value);
     falt.focus();
   }
 }

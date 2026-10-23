@@ -17,3 +17,18 @@ const arElement = document.getElementById("ar");
 if (arElement) {
   arElement.textContent = new Date().getFullYear();
 }
+
+// 3. Klubbmärken som leder till lagets trupp (truppen visas på Sök-sidan).
+// "lag" har antingen ett id från football-data ({ id: 81 }) eller bara ett namn
+// ({ namn: "Liverpool" }), då letar Sök-sidan upp laget med namnet.
+// Märket kan ligga inuti en länk (t.ex. en matchrad), därför stoppar vi den länken.
+function gorTillTruppLank(element, lag) {
+  if (!element || !lag || (!lag.id && !lag.namn)) return;
+  element.classList.add("trupp-lank");
+  element.title = "Visa truppen";
+  element.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = lag.id ? "sok.html?lag=" + lag.id : "sok.html?lagnamn=" + encodeURIComponent(lag.namn);
+  });
+}

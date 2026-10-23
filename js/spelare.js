@@ -226,20 +226,6 @@ function visaSpelare(wiki, fd, namn, lagnamn) {
   if (wiki.uppdaterad) {
     kort.appendChild(skapa("p", "sp-kalla", "Klubbstatistiken är uppdaterad " + wiki.uppdaterad + " (ligamatcher)."));
   }
-
-  // Högra rutan: kort text om spelaren och var uppgifterna kommer ifrån
-  const sidokort = document.getElementById("sidokort");
-  sidokort.replaceChildren(skapa("h2", "fo-sidorubrik", "Om spelaren"));
-  if (wiki.sammanfattning) sidokort.appendChild(skapa("p", "sp-text", wiki.sammanfattning));
-  const kalla = skapa("p", "sp-kalla");
-  kalla.appendChild(document.createTextNode("Källa: "));
-  const lank = skapa("a", "", "Wikipedia");
-  lank.href = wiki.lank;
-  lank.target = "_blank";
-  lank.rel = "noopener";
-  kalla.appendChild(lank);
-  kalla.appendChild(document.createTextNode(" (CC BY-SA)"));
-  sidokort.appendChild(kalla);
 }
 
 async function startaSpelare() {

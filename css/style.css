@@ -1286,18 +1286,10 @@ a.re-match:hover {
 .sp-medalj.plats-1 { background-color: #c9a227; color: #1d1450; }
 .sp-medalj.plats-2 { background-color: #b8bcc8; color: #1d1450; }
 .sp-medalj.plats-3 { background-color: #b06d3b; }
-.sp-text {
-  margin: 0 0.8vw 1.5vh;
-  font-size: clamp(11px, 0.8vw, 15px);
-  line-height: 1.45;
-}
 .sp-kalla {
   margin: 0 0.8vw 2vh;
   color: var(--farg-text-dampad);
   font-size: clamp(10px, 0.7vw, 13px);
-}
-.sp-kalla a {
-  color: var(--farg-text);
 }
 
 /* Spelarna på planen och avbytarna är länkar till spelarsidan */

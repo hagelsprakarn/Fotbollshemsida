@@ -59,8 +59,9 @@ function byggAnsikte(spelare, lag, klass) {
     const initialer = spelare.namn.split(" ").map(function (ord) { return ord[0]; }).join("").slice(0, 2);
     bild.replaceWith(skapa("div", klass + " sok-initialer", initialer));
   };
-  bild.src = API_BAS_URL + "/spelarbild?namn=" + encodeURIComponent(spelare.namn) +
-    "&lag=" + encodeURIComponent(lag.kort);
+  // "v=2" ger nya adresser, så att webbläsaren inte använder gamla sparade (ibland felaktiga) bilder
+  bild.src = API_BAS_URL + "/spelarbild?v=2&namn=" + encodeURIComponent(spelare.namn) +
+    "&lag=" + encodeURIComponent(lag.namn);   // hela namnet, "Barça" känns inte igen som Barcelona
   return bild;
 }
 

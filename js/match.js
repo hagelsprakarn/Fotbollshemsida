@@ -81,7 +81,8 @@ function byggAnsikte(spelare, lagnamn) {
   bild.onerror = function () {
     bild.replaceWith(skapa("div", "ma-nummer", spelare.nummer));
   };
-  bild.src = API_BAS_URL + "/spelarbild?namn=" + encodeURIComponent(spelare.namn) +
+  // "v=2" ger nya adresser, så att webbläsaren inte använder gamla sparade (ibland felaktiga) bilder
+  bild.src = API_BAS_URL + "/spelarbild?v=2&namn=" + encodeURIComponent(spelare.namn) +
     "&lag=" + encodeURIComponent(lagnamn);
   return bild;
 }
@@ -132,8 +133,8 @@ function byggUppstallning(data, match) {
 
   sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[1], match.awayTeam)));
   const plan = skapa("div", "ma-plan");
-  plan.appendChild(byggPlanhalva(data.lag[1], false, match.awayTeam.shortName || match.awayTeam.name));
-  plan.appendChild(byggPlanhalva(data.lag[0], true, match.homeTeam.shortName || match.homeTeam.name));
+  plan.appendChild(byggPlanhalva(data.lag[1], false, match.awayTeam.name || match.awayTeam.shortName));
+  plan.appendChild(byggPlanhalva(data.lag[0], true, match.homeTeam.name || match.homeTeam.shortName));
   sektion.appendChild(plan);
   sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[0], match.homeTeam)));
 

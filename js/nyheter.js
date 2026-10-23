@@ -136,7 +136,8 @@ function byggOvergangsAnsikte(overgang) {
     const initialer = overgang.spelare.split(" ").map(function (ord) { return ord[0]; }).join("").slice(0, 2);
     bild.replaceWith(skapa("div", "ov-ansikte ov-initialer", initialer));
   };
-  bild.src = API_BAS_URL + "/spelarbild?namn=" + encodeURIComponent(overgang.spelare) +
+  // "v=2" ger nya adresser, så att webbläsaren inte använder gamla sparade (ibland felaktiga) bilder
+  bild.src = API_BAS_URL + "/spelarbild?v=2&namn=" + encodeURIComponent(overgang.spelare) +
     "&lag=" + encodeURIComponent(overgang.till);
   return bild;
 }

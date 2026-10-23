@@ -97,8 +97,8 @@ async function visaTabell(huvudkort, liga) {
     const lag = skapa("td", "lag");
     if (rad.team.crest) lag.appendChild(skapaLogga(rad.team.crest));
     lag.appendChild(skapa("span", "", rad.team.shortName || rad.team.name));
-    gorTillTruppLank(lag, rad.team);   // klick på laget i tabellen visar truppen
     tr.appendChild(lag);
+    gorTillTruppLank(tr, rad.team);   // klick var som helst på raden visar lagets trupp
 
     [rad.playedGames, rad.won, rad.draw, rad.lost, rad.goalDifference].forEach(function (varde) {
       tr.appendChild(skapa("td", "", varde));

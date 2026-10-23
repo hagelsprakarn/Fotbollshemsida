@@ -1313,7 +1313,10 @@ img.trupp-lank {
 img.trupp-lank:hover {
   transform: scale(1.2);
 }
-td.trupp-lank:hover span,
+tr.trupp-lank:hover td {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+tr.trupp-lank:hover td.lag span,
 .ma-lag.trupp-lank:hover .ma-lagnamn {
   text-decoration: underline;
 }

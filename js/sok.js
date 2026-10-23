@@ -1,6 +1,6 @@
 // Sök-sidan (sok.html): sök bland alla lag och spelare i topp 5-ligorna och
 // Champions League. Klickar man på ett lag visas truppen, och klickar man på
-// en spelare visas ett spelarkort i högra rutan.
+// en spelare öppnas spelarsidan (spelare.html).
 // Valt lag och spelare står i adressen, t.ex. sok.html?lag=5&spelare=8004
 
 // Hjälpfunktion: skapar ett element med en klass och en text
@@ -98,8 +98,16 @@ function byggSpelarResultat(spelare, lag) {
   info.appendChild(skapa("span", "", lag.kort + " · " + positionSvenska(spelare.position)));
   text.appendChild(info);
   rad.appendChild(text);
-  rad.addEventListener("click", function () { visaTrupp(lag, spelare); });
+  rad.addEventListener("click", function () { oppnaSpelare(spelare, lag); });
   return rad;
+}
+
+// Öppnar spelarsidan. Först sparas laget och spelaren i adressen, så att man kommer
+// tillbaka till lagets trupp med spelaren markerad när man trycker på Tillbaka.
+function oppnaSpelare(spelare, lag) {
+  uppdateraAdress(lag, spelare);
+  window.location.href = "spelare.html?namn=" + encodeURIComponent(spelare.namn) +
+    "&lag=" + encodeURIComponent(lag.namn);
 }
 
 function visaResultat(sokord) {
@@ -154,7 +162,6 @@ function visaTrupp(lag, valdSpelare) {
   tillbaka.addEventListener("click", function (e) {
     e.preventDefault();
     uppdateraAdress(null, null);
-    visaSpelarkort(null);
     visaResultat(document.getElementById("sok-falt").value);
   });
   innehall.appendChild(tillbaka);
@@ -185,57 +192,14 @@ function visaTrupp(lag, valdSpelare) {
       if (s.land) info.push(s.land);
       text.appendChild(skapa("div", "sok-info", info.join(" · ")));
       rad.appendChild(text);
-      rad.addEventListener("click", function () {
-        innehall.querySelectorAll(".sok-rad.vald").forEach(function (r) { r.classList.remove("vald"); });
-        rad.classList.add("vald");
-        uppdateraAdress(lag, s);
-        visaSpelarkort(s, lag);
-      });
+      rad.addEventListener("click", function () { oppnaSpelare(s, lag); });
       innehall.appendChild(rad);
     });
   });
 
-  visaSpelarkort(valdSpelare, lag);
+  // Kommer man tillbaka från en spelarsida är den spelaren markerad
   const vald = innehall.querySelector(".sok-rad.vald");
   if (vald) vald.scrollIntoView({ block: "center" });
-}
-
-// ============================================
-// SPELARKORTET (högra rutan)
-// ============================================
-
-function visaSpelarkort(spelare, lag) {
-  const sidokort = document.getElementById("sidokort");
-  sidokort.replaceChildren();
-  if (!spelare) {
-    sidokort.appendChild(skapa("h2", "fo-sidorubrik", "Spelare"));
-    sidokort.appendChild(skapa("p", "re-meddelande", "Klicka på en spelare för att se mer om den."));
-    return;
-  }
-
-  const kort = skapa("div", "sok-spelarkort");
-  kort.appendChild(byggAnsikte(spelare, lag, "sok-storansikte"));
-  kort.appendChild(skapa("h2", "sok-spelarnamn", spelare.namn));
-
-  const klubb = skapa("div", "sok-lagrad sok-klubb");
-  klubb.appendChild(skapaLogga(lag.logga, "sok-litenlogga"));
-  klubb.appendChild(skapa("span", "", lag.kort));
-  kort.appendChild(klubb);
-
-  const fakta = [
-    ["Position", positionSvenska(spelare.position)],
-    ["Ålder", spelare.fodd ? alder(spelare.fodd) + " år" : "–"],
-    ["Född", spelare.fodd ? new Date(spelare.fodd).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" }) : "–"],
-    ["Land", spelare.land || "–"]
-  ];
-  fakta.forEach(function (par) {
-    const rad = skapa("div", "sok-fakta");
-    rad.appendChild(skapa("span", "sok-etikett", par[0]));
-    rad.appendChild(skapa("span", "", par[1]));
-    kort.appendChild(rad);
-  });
-
-  sidokort.appendChild(kort);
 }
 
 // ============================================
@@ -246,7 +210,6 @@ async function startaSok() {
   const falt = document.getElementById("sok-falt");
   const innehall = document.getElementById("sok-innehall");
   innehall.appendChild(skapa("p", "mr-meddelande", "Hämtar lag och spelare..."));
-  visaSpelarkort(null);
 
   const data = await hamtaFranApi("/sokdata");
   if (!data || !data.lag || data.lag.length === 0) {
@@ -257,7 +220,6 @@ async function startaSok() {
 
   falt.addEventListener("input", function () {
     uppdateraAdress(null, null);
-    visaSpelarkort(null);
     visaResultat(falt.value);
   });
 

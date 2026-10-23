@@ -520,6 +520,158 @@ async function sokWikipedia(namn, lag) {
   return sida ? sida.thumbnail.source : null;
 }
 
+// ============================================
+// SPELARSIDAN (spelare.html)
+// Allt om en spelare kommer från faktarutan ("infobox") på spelarens Wikipedia-sida:
+// karriär, landslag, längd, position och meriter.
+// ============================================
+
+// Letar upp spelarens Wikipedia-sida. Samma regler som för bilderna: sidan ska handla
+// om en fotbollsspelare och ha ett av namnen gemensamt med sökningen.
+// Söker först med lagets namn (så att rätt person hittas bland flera med samma namn),
+// och om det inte ger något utan lagnamn.
+async function hittaWikiSpelare(namn, lag) {
+  const namnOrd = normalisera(namn).split(" ");
+  for (const sokord of [namn + " footballer " + lag, namn + " footballer"]) {
+    const adress = "https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=4" +
+      "&prop=pageimages|description|extracts&piprop=thumbnail&pithumbsize=400&exintro=1&explaintext=1&exsentences=4&exlimit=4" +
+      "&gsrsearch=" + encodeURIComponent(sokord);
+    const svar = await fetch(adress, { headers: WIKI_HUVUD });
+    if (!svar.ok) continue;
+    const data = await svar.json();
+    const sidor = Object.values((data.query && data.query.pages) || {})
+      .sort(function (a, b) { return a.index - b.index; });
+    const sida = sidor.find(function (p) {
+      return /footballer/i.test(p.description || "") &&
+        normalisera(p.title).split(" ").some(function (ord) { return ord.length >= 3 && namnOrd.includes(ord); });
+    });
+    if (sida) return sida;
+  }
+  return null;
+}
+
+// Läser faktarutan till ett objekt { name: "...", clubs1: "...", ... }.
+// Fälten skiljs åt med "|", men "|" finns också inuti länkar [[...|...]] och mallar {{...|...}},
+// så vi går igenom texten tecken för tecken och delar bara där vi inte är inuti något.
+function lasFaktaruta(text) {
+  const rensad = text.replace(/<!--[\s\S]*?-->/g, "");
+  const start = rensad.search(/\{\{\s*Infobox football biography/i);
+  if (start < 0) return null;
+
+  const delar = [];
+  let djup = 0;
+  let bit = "";
+  for (let i = start + 2; i < rensad.length; i++) {
+    const tva = rensad.substr(i, 2);
+    if (tva === "{{" || tva === "[[") {
+      djup++;
+      bit += tva;
+      i++;
+    } else if (tva === "}}" || tva === "]]") {
+      if (djup === 0) break;   // slutet på faktarutan
+      djup--;
+      bit += tva;
+      i++;
+    } else if (rensad[i] === "|" && djup === 0) {
+      delar.push(bit);
+      bit = "";
+    } else {
+      bit += rensad[i];
+    }
+  }
+  delar.push(bit);
+
+  const falt = {};
+  delar.slice(1).forEach(function (del) {
+    const lika = del.indexOf("=");
+    if (lika > 0) falt[del.slice(0, lika).trim().toLowerCase()] = del.slice(lika + 1).trim();
+  });
+  return falt;
+}
+
+// "{{birth date and age|2002|11|25|df=y}}" eller "{{birth-date and age|15 December 2006}}" -> "2002-11-25"
+function fodelsedag(text) {
+  const traff = (text || "").match(/\|\s*(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})/);
+  if (traff) return traff[1] + "-" + traff[2].padStart(2, "0") + "-" + traff[3].padStart(2, "0");
+  const ord = (text || "").match(/\|\s*(\d{1,2} [A-Za-z]+ \d{4}|[A-Za-z]+ \d{1,2},? \d{4})/);
+  const tid = ord ? Date.parse(ord[1] + " UTC") : NaN;
+  return isNaN(tid) ? "" : new Date(tid).toISOString().slice(0, 10);
+}
+
+// Längden kan stå som "1.74 m", {{height|m=1.74}} eller {{convert|1.74|m|...}}
+function langd(text) {
+  const traff = (text || "").match(/m\s*=\s*([\d.]+)/) || (text || "").match(/([12][.,]\d{2})\s*\|?\s*m\b/);
+  return traff ? traff[1].replace(",", ".") + " m" : "";
+}
+
+// Numrerade fält, t.ex. years1/clubs1/caps1/goals1, years2/clubs2/... blir en lista
+function numreradLista(falt, prefix, namn) {
+  const lista = [];
+  for (let i = 1; i <= 40; i++) {
+    const klubb = falt[prefix + namn[1] + i];
+    if (klubb === undefined) continue;
+    lista.push({
+      ar: rensaWiki(falt[prefix + namn[0] + i]),
+      klubb: rensaWiki(klubb).replace(/\(loan\)/i, "(lån)"),
+      matcher: namn[2] ? rensaWiki(falt[prefix + namn[2] + i]) : "",
+      mal: namn[3] ? rensaWiki(falt[prefix + namn[3] + i]).replace(/[()]/g, "") : ""
+    });
+  }
+  return lista.filter(function (r) { return r.klubb; });
+}
+
+// Meriterna står som {{MedalCompetition|[[FIFA World Cup]]}} följt av {{Medal|W|[[2026 ...]]}}.
+// W/Gold = vinnare, RU/Silver = tvåa, Bronze/3rd = trea.
+function lasMeriter(text) {
+  const meriter = [];
+  let turnering = "";
+  (text || "").split(/(?=\{\{)/).forEach(function (bit) {
+    // Turneringen står som {{MedalCompetition|...}} eller {{Medal|Comp|...}}
+    const ny = bit.match(/^\{\{\s*(?:MedalCompetition|Medal\s*\|\s*Comp)\s*\|(.*)/i);
+    if (ny) {
+      turnering = rensaWiki(ny[1].replace(/\}\}[\s\S]*$/, ""));
+      return;
+    }
+    const medalj = bit.match(/^\{\{\s*Medal(Gold|Silver|Bronze|\s*\|\s*(W|RU|Gold|Silver|Bronze|3rd))\s*\|(.*)/i);
+    if (!medalj || !turnering) return;
+    const typ = (medalj[2] || medalj[1]).toLowerCase();
+    const plats = typ === "w" || typ === "gold" ? 1 : typ === "ru" || typ === "silver" ? 2 : 3;
+    // "[[FIFA World Cup 2026|2026 Canada–Mexico–US]]|[[...|Team]]}}" -> "2026 Canada–Mexico–US"
+    const tillfalle = rensaWiki(medalj[3].replace(/\}\}[\s\S]*$/, "")).split("|")[0].trim();
+    meriter.push({ turnering: turnering, plats: plats, tillfalle: tillfalle });
+  });
+  return meriter;
+}
+
+async function hamtaSpelare(namn, lag) {
+  const sida = await hittaWikiSpelare(namn, lag);
+  if (!sida) return null;
+  const svar = await fetch("https://en.wikipedia.org/w/index.php?action=raw&section=0&title=" +
+    encodeURIComponent(sida.title.replace(/ /g, "_")), { headers: WIKI_HUVUD });
+  const falt = svar.ok ? lasFaktaruta(await svar.text()) : null;
+  if (!falt) return null;
+
+  return {
+    titel: sida.title,
+    lank: "https://en.wikipedia.org/wiki/" + encodeURIComponent(sida.title.replace(/ /g, "_")),
+    sammanfattning: sida.extract || "",
+    bild: sida.thumbnail ? sida.thumbnail.source : "",
+    namn: rensaWiki(falt.name),
+    fulltNamn: rensaWiki(falt.full_name),
+    fodd: fodelsedag(falt.birth_date),
+    fodelseort: rensaWiki(falt.birth_place),
+    langd: langd(falt.height),
+    position: rensaWiki(falt.position),
+    klubb: rensaWiki(falt.currentclub),
+    nummer: rensaWiki(falt.clubnumber),
+    ungdom: numreradLista(falt, "youth", ["years", "clubs"]),
+    karriar: numreradLista(falt, "", ["years", "clubs", "caps", "goals"]),
+    landslag: numreradLista(falt, "national", ["years", "team", "caps", "goals"]),
+    meriter: lasMeriter(falt.medaltemplates),
+    uppdaterad: rensaWiki(falt["club-update"] || falt.pcupdate || "")
+  };
+}
+
 // Svarar med { bild, lange }. "lange" = får sparas länge. Är TheSportsDB upptaget
 // (för många anrop) sparas en Wikipedia-bild bara kort, så att den urklippta kan komma senare.
 async function hittaSpelarbild(namn, lag) {
@@ -787,6 +939,34 @@ export default {
         if (!misslyckades) {
           ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()).catch(function () {}));
         }
+      }
+      return svar;
+    }
+
+    // /spelare?namn=Pedri&lag=FC Barcelona ger allt om en spelare från Wikipedia, sparat ett dygn
+    if (url.pathname === "/spelare") {
+      const namn = url.searchParams.get("namn") || "";
+      const lag = url.searchParams.get("lag") || "";
+      if (!namn) {
+        return new Response("Saknar namn", { status: 400, headers: headers });
+      }
+      const cacheNyckel = new Request("https://cache.lokal/spelare/" + encodeURIComponent(normalisera(namn) + "|" + normalisera(lag)));
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let data;
+        try {
+          data = await hamtaSpelare(namn, lag);
+        } catch (fel) {
+          return new Response("Kunde inte hämta spelaren", { status: 502, headers: headers });
+        }
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=86400" }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
       }
       return svar;
     }

@@ -1131,52 +1131,6 @@ a.re-match:hover {
   font-size: clamp(12px, 0.9vw, 17px);
 }
 
-/* Spelarkortet i högra rutan */
-.sok-spelarkort {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 3vh 0.8vw;
-  text-align: center;
-}
-.sok-storansikte {
-  width: clamp(80px, 7vw, 130px);
-  height: clamp(80px, 7vw, 130px);
-  border-radius: 50%;
-  border: 3px solid #ffffff;
-  background-color: rgba(0, 0, 0, 0.25);
-  object-fit: cover;
-  object-position: top;
-}
-.sok-storansikte.sok-initialer {
-  font-size: clamp(24px, 2vw, 40px);
-}
-.sok-spelarnamn {
-  margin: 1.5vh 0 0.5vh;
-  font-family: var(--typsnitt);
-  font-weight: normal;
-  font-size: clamp(15px, 1.2vw, 24px);
-  line-height: 1.2;
-}
-.sok-klubb {
-  justify-content: center;
-  margin-bottom: 2vh;
-  font-size: clamp(12px, 0.9vw, 17px);
-}
-.sok-fakta {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  padding: 0.8vh 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: clamp(11px, 0.8vw, 15px);
-  text-align: right;
-}
-.sok-etikett {
-  color: var(--farg-text-dampad);
-  text-align: left;
-}
 
 /* Skadelista på matchsidan: en kolumn per lag */
 .ma-skadelista {
@@ -1227,4 +1181,132 @@ a.re-match:hover {
   margin: 0.3vh 0 0;
   font-size: clamp(9px, 0.65vw, 12px);
   color: var(--farg-text-dampad);
+}
+
+/* ============================================
+   SPELARSIDAN (spelare.html)
+   ============================================ */
+.sp-huvud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 1vh 2vw 2vh;
+  text-align: center;
+}
+.sp-ansikte {
+  width: clamp(90px, 8vw, 150px);
+  height: clamp(90px, 8vw, 150px);
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  background-color: rgba(0, 0, 0, 0.25);
+  object-fit: cover;
+  object-position: top;
+}
+.sp-ansikte.sok-initialer {
+  font-size: clamp(26px, 2.2vw, 44px);
+}
+.sp-namn {
+  margin: 1vh 0 0;
+  font-family: var(--typsnitt);
+  font-weight: normal;
+  font-size: clamp(22px, 2.2vw, 42px);
+  line-height: 1.1;
+}
+.sp-fulltnamn {
+  color: var(--farg-text-dampad);
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.sp-klubb {
+  justify-content: center;
+  margin-top: 0.5vh;
+  font-size: clamp(13px, 1vw, 19px);
+}
+.sp-klickbar {
+  cursor: pointer;
+}
+.sp-klickbar:hover {
+  text-decoration: underline;
+}
+/* Faktarutor: position, ålder, längd osv. */
+.sp-fakta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1vh 0.8vw;
+  margin: 0 2vw 2vh;
+}
+.sp-faktaruta {
+  padding: 1vh 0.8vw;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+.sp-etikett {
+  color: var(--farg-text-dampad);
+  font-size: clamp(10px, 0.75vw, 14px);
+}
+.sp-varde {
+  font-size: clamp(12px, 0.95vw, 18px);
+  line-height: 1.25;
+}
+.sp-tabell td,
+.sp-tabell th {
+  white-space: nowrap;
+}
+.sp-tabell td.lag {
+  white-space: normal;
+  display: table-cell;
+}
+.sp-lan td {
+  color: var(--farg-text-dampad);
+}
+.sp-ungdom,
+.sp-meriter {
+  margin: 0 2vw 2vh;
+}
+.sp-ungdomsrad,
+.sp-merit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6vh 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: clamp(12px, 0.9vw, 17px);
+}
+.sp-ungdomsrad .sp-etikett {
+  min-width: 7em;
+}
+.sp-medalj {
+  flex-shrink: 0;
+  min-width: 4.5em;
+  padding: 1px 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-size: clamp(10px, 0.75vw, 14px);
+}
+.sp-medalj.plats-1 { background-color: #c9a227; color: #1d1450; }
+.sp-medalj.plats-2 { background-color: #b8bcc8; color: #1d1450; }
+.sp-medalj.plats-3 { background-color: #b06d3b; }
+.sp-text {
+  margin: 0 0.8vw 1.5vh;
+  font-size: clamp(11px, 0.8vw, 15px);
+  line-height: 1.45;
+}
+.sp-kalla {
+  margin: 0 0.8vw 2vh;
+  color: var(--farg-text-dampad);
+  font-size: clamp(10px, 0.7vw, 13px);
+}
+.sp-kalla a {
+  color: var(--farg-text);
+}
+
+/* Spelarna på planen och avbytarna är länkar till spelarsidan */
+a.ma-spelare,
+a.ma-avbytare {
+  color: var(--farg-text);
+  text-decoration: none;
+}
+a.ma-spelare:hover .ma-namn,
+a.ma-avbytare:hover {
+  text-decoration: underline;
 }

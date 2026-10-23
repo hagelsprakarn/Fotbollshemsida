@@ -87,6 +87,11 @@ function byggAnsikte(spelare, lagnamn) {
   return bild;
 }
 
+// Adressen till en spelares egen sida
+function spelarLank(namn, lagnamn) {
+  return "spelare.html?namn=" + encodeURIComponent(namn) + "&lag=" + encodeURIComponent(lagnamn);
+}
+
 // En planhalva. Hemmalaget har målvakten längst ner, bortalaget längst upp.
 // "lag.rader" kommer färdiga från mellanhanden: målvakten först, sedan bakifrån
 // och framåt, och varje rad från lagets vänsterkant till högerkant.
@@ -100,7 +105,9 @@ function byggPlanhalva(lag, arHemma, lagnamn) {
     const radElement = skapa("div", "ma-rad");
     // Bortalaget står vänt mot hemmalaget, så deras vänsterkant är vår högerkant
     (arHemma ? rad : rad.slice().reverse()).forEach(function (spelare) {
-      const ruta = skapa("div", "ma-spelare");
+      // Varje spelare på planen är en länk till spelarsidan
+      const ruta = skapa("a", "ma-spelare");
+      ruta.href = spelarLank(spelare.namn, lagnamn);
       ruta.title = spelare.namn;
       ruta.appendChild(byggAnsikte(spelare, lagnamn));
       ruta.appendChild(skapa("div", "ma-namn", spelare.efternamn));
@@ -245,7 +252,8 @@ function visaAvbytare(data, match) {
   [[data.lag[0], match.homeTeam], [data.lag[1], match.awayTeam]].forEach(function (par) {
     sidokort.appendChild(skapa("h3", "re-turnering", par[1].shortName || par[1].name));
     par[0].avbytare.forEach(function (spelare) {
-      const rad = skapa("div", "ma-avbytare");
+      const rad = skapa("a", "ma-avbytare");
+      rad.href = spelarLank(spelare.namn, par[1].name || par[1].shortName);
       rad.appendChild(skapa("span", "ma-avbytare-nr", spelare.nummer));
       rad.appendChild(skapa("span", "", spelare.namn));
       sidokort.appendChild(rad);

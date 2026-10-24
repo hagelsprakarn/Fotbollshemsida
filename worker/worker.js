@@ -433,8 +433,14 @@ async function forraStartelvan(sammanfattning, lagId, fore) {
 }
 
 // Svarar med { typ: "riktig" | "forvantad" | "saknas", lag: [hemma, borta] }
-async function hamtaUppstallning(matchId, env) {
-  // 1. Hämta matchen från football-data för att veta lag, datum och turnering
+// Letar upp samma match hos ESPN som football-datas match (samma dag, samma lag).
+// Svaret { liga, id, hemmaId, bortaId, utcDate } ändras inte, så det sparas ett dygn
+// och football-data behöver bara frågas en gång per match.
+async function hittaEspnMatch(matchId, env, ctx) {
+  const cacheNyckel = new Request("https://cache.lokal/espnmatch/" + matchId);
+  const sparad = await caches.default.match(cacheNyckel);
+  if (sparad) return sparad.json();
+
   const fdSvar = await fetch(API_BAS_URL + "/matches/" + matchId, {
     headers: { "X-Auth-Token": rensaNyckel(env.API_NYCKEL || "") }
   });
@@ -442,9 +448,8 @@ async function hamtaUppstallning(matchId, env) {
   const match = await fdSvar.json();
 
   const liga = ESPN_LIGOR[match.competition.code];
-  if (!liga) return { typ: "saknas", orsak: "Turneringen finns inte hos ESPN" };
+  if (!liga) return { saknas: "Turneringen finns inte hos ESPN" };
 
-  // 2. Leta upp samma match hos ESPN (samma dag, samma lag)
   const dag = match.utcDate.slice(0, 10).replace(/-/g, "");
   const tavlan = await hamtaEspn("/" + liga + "/scoreboard?dates=" + dag);
   let bast = null;
@@ -456,29 +461,69 @@ async function hamtaUppstallning(matchId, env) {
     const poang = (liknarLag(hemma.team.displayName, match.homeTeam) ? 1 : 0) +
       (liknarLag(borta.team.displayName, match.awayTeam) ? 1 : 0);
     if (poang > bastPoang) {
-      bast = { id: e.id, hemmaId: hemma.team.id, bortaId: borta.team.id };
+      bast = { liga: liga, id: e.id, hemmaId: hemma.team.id, bortaId: borta.team.id, utcDate: match.utcDate };
       bastPoang = poang;
     }
   });
-  if (!bast) return { typ: "saknas", orsak: "Hittade inte matchen hos ESPN" };
+  if (!bast) return { saknas: "Hittade inte matchen hos ESPN" };
+
+  ctx.waitUntil(caches.default.put(cacheNyckel, new Response(JSON.stringify(bast), {
+    headers: { "Cache-Control": "public, max-age=86400" }
+  })));
+  return bast;
+}
+
+// Är matchen slut enligt ESPN?
+function espnKlar(sammanfattning) {
+  const tavling = sammanfattning.header && sammanfattning.header.competitions && sammanfattning.header.competitions[0];
+  return Boolean(tavling && tavling.status && tavling.status.type && tavling.status.type.completed);
+}
+
+async function hamtaUppstallning(matchId, env, ctx) {
+  // 1-2. Hitta matchen hos ESPN
+  const espn = await hittaEspnMatch(matchId, env, ctx);
+  if (espn.saknas) return { typ: "saknas", orsak: espn.saknas };
 
   // 3. Är startelvorna släppta? (brukar ske ungefär en timme före avspark)
-  const sammanfattning = await hamtaEspn("/" + liga + "/summary?event=" + bast.id);
+  const sammanfattning = await hamtaEspn("/" + espn.liga + "/summary?event=" + espn.id);
   const trupper = sammanfattning.rosters || [];
   const hemmaTrupp = trupper.find(function (r) { return r.homeAway === "home"; });
   const bortaTrupp = trupper.find(function (r) { return r.homeAway === "away"; });
   const riktig = [hemmaTrupp ? forenkla(hemmaTrupp) : null, bortaTrupp ? forenkla(bortaTrupp) : null];
   if (riktig[0] && riktig[1]) {
-    return { typ: "riktig", lag: riktig, klar: match.status === "FINISHED" };
+    return { typ: "riktig", lag: riktig, klar: espnKlar(sammanfattning) };
   }
 
   // 4. Annars: varje lags startelva från deras förra match
   const lag = await Promise.all([
-    forraStartelvan(sammanfattning, bast.hemmaId, match.utcDate),
-    forraStartelvan(sammanfattning, bast.bortaId, match.utcDate)
+    forraStartelvan(sammanfattning, espn.hemmaId, espn.utcDate),
+    forraStartelvan(sammanfattning, espn.bortaId, espn.utcDate)
   ]);
   if (!lag[0] && !lag[1]) return { typ: "saknas", orsak: "Inga tidigare startelvor hittades" };
   return { typ: "forvantad", lag: lag };
+}
+
+// Målen i en match: { klar, mal: [{ minut, spelare, assist, lag: "hemma"/"borta", straff, sjalvmal }] }
+async function hamtaMal(matchId, env, ctx) {
+  const espn = await hittaEspnMatch(matchId, env, ctx);
+  if (espn.saknas) return { klar: false, mal: [] };
+
+  const sammanfattning = await hamtaEspn("/" + espn.liga + "/summary?event=" + espn.id);
+  const tavling = (sammanfattning.header && sammanfattning.header.competitions && sammanfattning.header.competitions[0]) || {};
+  const mal = (tavling.details || [])
+    .filter(function (h) { return h.scoringPlay; })
+    .map(function (h) {
+      const deltagare = h.participants || [];
+      return {
+        minut: h.clock ? h.clock.displayValue : "",
+        spelare: deltagare[0] ? deltagare[0].athlete.displayName : "",
+        assist: deltagare[1] ? deltagare[1].athlete.displayName : "",
+        lag: h.team && h.team.id === espn.hemmaId ? "hemma" : "borta",
+        straff: Boolean(h.penaltyKick),
+        sjalvmal: Boolean(h.ownGoal)
+      };
+    });
+  return { klar: espnKlar(sammanfattning), mal: mal };
 }
 
 // ============================================
@@ -971,6 +1016,34 @@ export default {
       return svar;
     }
 
+    // /mal?id=123 ger målen i en match (målskytt, minut, assist). Under matchen sparas
+    // svaret bara en minut så att nya mål syns snabbt, färdiga matcher ett dygn.
+    if (url.pathname === "/mal") {
+      const matchId = url.searchParams.get("id") || "";
+      if (!/^\d+$/.test(matchId)) {
+        return new Response("Saknar match-id", { status: 400, headers: headers });
+      }
+      const cacheNyckel = new Request("https://cache.lokal/mal/" + matchId);
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let data;
+        try {
+          data = await hamtaMal(matchId, env, ctx);
+        } catch (fel) {
+          return new Response("Kunde inte hämta målen", { status: 502, headers: headers });
+        }
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=" + (data.klar ? 86400 : 60) }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
+      }
+      return svar;
+    }
+
     // /uppstallning?id=123 ger laguppställningarna för en match.
     // Färdiga matcher sparas ett dygn, annars 10 minuter.
     if (url.pathname === "/uppstallning") {
@@ -984,7 +1057,7 @@ export default {
       if (!svar) {
         let data;
         try {
-          data = await hamtaUppstallning(matchId, env);
+          data = await hamtaUppstallning(matchId, env, ctx);
         } catch (fel) {
           data = { typ: "saknas", orsak: fel.message };
         }

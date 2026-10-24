@@ -1354,3 +1354,33 @@ tr.trupp-lank:hover td.lag span,
 .sk-rad:hover .sk-namn {
   text-decoration: underline;
 }
+
+/* Målen under resultatet på matchsidan: hemmalaget till vänster, bortalaget till höger */
+.ma-mal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2vw;
+  margin: 1.5vh 2vw 0;
+}
+.ma-malkolumn.hemma {
+  text-align: right;
+}
+.ma-malrad {
+  font-size: clamp(11px, 0.85vw, 16px);
+  line-height: 1.6;
+}
+.ma-boll {
+  margin-right: 4px;
+  font-size: 0.85em;
+}
+.ma-malskytt {
+  color: var(--farg-text);
+  text-decoration: none;
+}
+.ma-malskytt:hover {
+  text-decoration: underline;
+}
+.ma-minut {
+  margin-left: 4px;
+  color: var(--farg-text-dampad);
+}

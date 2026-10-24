@@ -32,8 +32,31 @@ function harStartat(match) {
   return ["IN_PLAY", "PAUSED", "FINISHED"].includes(match.status);
 }
 
+// Målen under resultatet: hemmalagets till vänster, bortalagets till höger,
+// t.ex. "⚽ James Maddison 14'". Klick på målskytten öppnar spelarsidan.
+function byggMal(mal, match) {
+  const ruta = skapa("div", "ma-mal");
+  ["hemma", "borta"].forEach(function (sida) {
+    const kolumn = skapa("div", "ma-malkolumn " + sida);
+    mal.filter(function (m) { return m.lag === sida; }).forEach(function (m) {
+      const rad = skapa("div", "ma-malrad");
+      rad.appendChild(skapa("span", "ma-boll", "⚽"));
+      // Vid självmål tillhör målskytten det andra laget
+      const spelarensLag = (sida === "hemma") !== m.sjalvmal ? match.homeTeam : match.awayTeam;
+      const namn = skapa("a", "ma-malskytt", m.spelare);
+      namn.href = spelarLank(m.spelare, spelarensLag.name || spelarensLag.shortName);
+      rad.appendChild(namn);
+      rad.appendChild(skapa("span", "ma-minut", m.minut + (m.straff ? " (str)" : "") + (m.sjalvmal ? " (självmål)" : "")));
+      if (m.assist) rad.title = "Assist: " + m.assist;
+      kolumn.appendChild(rad);
+    });
+    ruta.appendChild(kolumn);
+  });
+  return ruta;
+}
+
 // Överst: turnering, lagen och resultatet (eller avsparkstiden)
-function byggHuvud(match) {
+function byggHuvud(match, mal) {
   const huvud = skapa("div", "ma-huvud");
 
   const tillbaka = skapa("a", "liga-tillbaka", "‹ Matcher");
@@ -61,6 +84,10 @@ function byggHuvud(match) {
     rad.appendChild(ruta);
   });
   huvud.appendChild(rad);
+
+  if (harStartat(match) && mal && mal.mal && mal.mal.length > 0) {
+    huvud.appendChild(byggMal(mal.mal, match));
+  }
 
   // Halvtid och domare, om vi vet dem
   const fakta = [];
@@ -275,10 +302,11 @@ async function visaMatch() {
     kort.appendChild(skapa("p", "mr-meddelande", "Hämtar matchen..."));
   }
 
-  const [match, uppstallning, skador] = await Promise.all([
+  const [match, uppstallning, skador, mal] = await Promise.all([
     hamtaFranApi("/matches/" + id),
     hamtaFranApi("/uppstallning?id=" + id),
-    hamtaFranApi("/skador")
+    hamtaFranApi("/skador"),
+    hamtaFranApi("/mal?id=" + id)
   ]);
 
   if (!match) {
@@ -291,7 +319,7 @@ async function visaMatch() {
 
   document.title = "JodaFoot – " + (match.homeTeam.shortName || match.homeTeam.name) +
     " – " + (match.awayTeam.shortName || match.awayTeam.name);
-  kort.replaceChildren(byggHuvud(match), byggUppstallning(uppstallning, match), byggSkadelista(skador, match));
+  kort.replaceChildren(byggHuvud(match, mal), byggUppstallning(uppstallning, match), byggSkadelista(skador, match));
   visaAvbytare(uppstallning, match);
 
   // Uppdatera varje minut tills matchen är slut

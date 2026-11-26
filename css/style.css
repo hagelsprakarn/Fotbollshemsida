@@ -1707,3 +1707,57 @@ tr.trupp-lank:hover td.lag span,
   color: #ff6b6b;
   font-weight: bold;
 }
+
+/* ============================================
+   BLÄDDRA I LIGATABELLEN, SKYTTELIGAN OCH RESULTATRUTAN
+   ============================================ */
+/* Ligor: tabellen/skytteligan fyller resten av rutan under flikarna */
+#liga-kort {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.liga-innehall,
+.liga-yta {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.liga-yta .mr-sidruta {
+  padding-bottom: 0;
+}
+
+/* Resultatrutan på Matcher: sidorna fyller rutan, pilarna står längst ner */
+.sidokort:has(.re-yta) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.re-yta {
+  flex: 1;
+  min-height: 0;
+}
+.re-yta .mr-sidruta {
+  padding: 0;
+}
+.mr-sidfot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 0.5vh 0 1.5vh;
+}
+.mr-sidfot .mr-raknare {
+  min-width: 3em;
+  padding: 0;
+}
+.mr-pil.nere {
+  position: static;
+  transform: none;
+}
+/* Pilarna behåller sin plats när de är dolda, så att sidnumret inte hoppar */
+.mr-sidfot .mr-pil[hidden] {
+  display: inline-block !important;
+  visibility: hidden;
+}

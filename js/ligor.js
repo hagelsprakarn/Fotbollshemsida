@@ -59,7 +59,6 @@ function visaLigalista(huvudkort) {
   huvudkort.appendChild(lista);
 }
 
-// Visar tabellen för en liga
 // En vald liga: rubrik, flikarna "Tabell" och "Skytteliga" och det som fliken visar.
 // Vald flik står i adressen, t.ex. ligor.html?liga=PL&vy=skytteliga
 const LIGAFLIKAR = [
@@ -85,8 +84,10 @@ function visaLiga(huvudkort, liga, vy) {
       f.classList.toggle("vald", f.textContent === flik.namn);
     });
     history.replaceState(null, "", "ligor.html?liga=" + liga.kod + (flik.vy === "tabell" ? "" : "&vy=" + flik.vy));
-    innehall.replaceChildren();
-    flik.visa(innehall, liga);
+    // En ny yta för varje flik, där man bläddrar mellan sidorna med pilar
+    const yta = skapa("div", "bladdra-kort liga-yta");
+    innehall.replaceChildren(yta);
+    flik.visa(yta, liga);
   }
 
   LIGAFLIKAR.forEach(function (flik) {
@@ -101,6 +102,45 @@ function visaLiga(huvudkort, liga, vy) {
   });
 
   oppna(LIGAFLIKAR.find(function (f) { return f.vy === vy; }) || LIGAFLIKAR[0]);
+}
+
+// Delar upp tabellraderna i sidor som man bläddrar mellan med pilarna. Varje sida får en
+// egen tabell med rubrikraden överst och så många rader som får plats i rutan (det beror
+// på skärmens storlek). Raderna läggs en i taget i en osynlig provsida, och när det blir
+// fullt börjar en ny sida, på samma sätt som på Nyheter-sidan.
+function sidorMedTabell(yta, rubrikrad, rader, klass) {
+  const provruta = skapa("div", "mr-sidruta");
+  const provraknare = skapa("div", "mr-raknare", "1 / 1");   // tar samma plats som den riktiga räknaren
+  provruta.style.visibility = "hidden";
+  yta.appendChild(provruta);
+  yta.appendChild(provraknare);
+
+  const sidor = [];
+  let sida;
+  let tabell;
+  function nySida() {
+    sida = skapa("div", "mr-sida");
+    tabell = skapa("table", klass);
+    tabell.appendChild(rubrikrad.cloneNode(true));
+    sida.appendChild(tabell);
+    provruta.replaceChildren(sida);
+    sidor.push(sida);
+  }
+
+  nySida();
+  rader.forEach(function (tr) {
+    tabell.appendChild(tr);
+    // Får raden inte plats flyttas den till en ny sida (men varje sida har minst en rad)
+    const forHog = tr.getBoundingClientRect().bottom > sida.getBoundingClientRect().bottom;
+    if (forHog && tabell.rows.length > 2) {
+      nySida();
+      tabell.appendChild(tr);
+    }
+  });
+
+  provruta.remove();
+  provraknare.remove();
+  return sidor;
 }
 
 // Visar tabellen för en liga
@@ -120,14 +160,12 @@ async function visaTabell(huvudkort, liga) {
   // Den totala tabellen (det finns även hemma- och bortatabeller som vi hoppar över)
   const tabellData = data.standings.find(function (s) { return s.type === "TOTAL"; }) || data.standings[0];
 
-  const tabell = skapa("table", "liga-tabell");
   const huvud = document.createElement("tr");
   ["#", "Lag", "S", "V", "O", "F", "+/-", "P"].forEach(function (text, i) {
     huvud.appendChild(skapa("th", i === 1 ? "lag" : "", text));
   });
-  tabell.appendChild(huvud);
 
-  tabellData.table.forEach(function (rad) {
+  const rader = tabellData.table.map(function (rad) {
     const tr = document.createElement("tr");
     tr.appendChild(skapa("td", "", rad.position));
 
@@ -141,10 +179,11 @@ async function visaTabell(huvudkort, liga) {
       tr.appendChild(skapa("td", "", varde));
     });
     tr.appendChild(skapa("td", "poang", rad.points));
-    tabell.appendChild(tr);
+    return tr;
   });
 
-  huvudkort.appendChild(tabell);
+  await document.fonts.ready;   // typsnittet måste vara laddat innan raderna mäts
+  visaSidor(huvudkort, sidorMedTabell(huvudkort, huvud, rader, "liga-tabell"));
 }
 
 // ============================================
@@ -184,7 +223,6 @@ async function visaSkytteliga(huvudkort, liga) {
 
   meddelande.remove();
 
-  const tabell = skapa("table", "liga-tabell sk-tabell");
   const huvud = document.createElement("tr");
   [["#", ""], ["Spelare", "lag"], ["M", "Spelade matcher"], ["Mål", "Mål"], ["A", "Assist"], ["Str", "Straffmål"]]
     .forEach(function (par) {
@@ -192,11 +230,10 @@ async function visaSkytteliga(huvudkort, liga) {
       if (par[1] && par[1] !== "lag") th.title = par[1];
       huvud.appendChild(th);
     });
-  tabell.appendChild(huvud);
 
   // Har två spelare lika många mål delar de placering
   let placering = 0;
-  data.scorers.forEach(function (rad, i) {
+  const rader = data.scorers.map(function (rad, i) {
     if (i === 0 || rad.goals !== data.scorers[i - 1].goals) placering = i + 1;
 
     const tr = skapa("tr", "sk-rad");
@@ -227,10 +264,11 @@ async function visaSkytteliga(huvudkort, liga) {
       window.location.href = "spelare.html?namn=" + encodeURIComponent(rad.player.name) +
         "&lag=" + encodeURIComponent(rad.team.name);
     });
-    tabell.appendChild(tr);
+    return tr;
   });
 
-  huvudkort.appendChild(tabell);
+  await document.fonts.ready;   // typsnittet måste vara laddat innan raderna mäts
+  visaSidor(huvudkort, sidorMedTabell(huvudkort, huvud, rader, "liga-tabell sk-tabell"));
 }
 
 // ============================================

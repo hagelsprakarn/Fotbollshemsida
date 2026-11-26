@@ -231,13 +231,35 @@ async function visaResultat() {
     turneringar.get(namn).push(match);
   });
 
+  // Resultaten delas upp i sidor med RESULTAT_PER_SIDA matcher, som man bläddrar mellan
+  // med pilarna längst ner. Varje sida får turneringens namn överst och när den byter.
+  const sidor = [];
+  let antal = 0;
   turneringar.forEach(function (lista, namn) {
-    sidokort.appendChild(skapa("h3", "re-turnering", namn));
-    lista.forEach(function (match) {
-      sidokort.appendChild(byggResultat(match));
+    lista.forEach(function (match, i) {
+      const nySida = antal % RESULTAT_PER_SIDA === 0;
+      if (nySida) sidor.push(skapa("div", "mr-sida"));
+      const sida = sidor[sidor.length - 1];
+      if (nySida || i === 0) sida.appendChild(skapa("h3", "re-turnering", namn));
+      sida.appendChild(byggResultat(match));
+      antal++;
     });
   });
+
+  const yta = skapa("div", "bladdra-kort re-yta");
+  sidokort.appendChild(yta);
+  // Rutan uppdateras varje minut, då ska man stanna kvar på den sida man har bläddrat till.
+  // Piltangenterna bläddrar i matchlistan, inte här.
+  visaSidor(yta, sidor, {
+    pilarNere: true,
+    tangenter: false,
+    start: resultatSida,
+    vidByte: function (nr) { resultatSida = nr; }
+  });
 }
+
+const RESULTAT_PER_SIDA = 5;
+let resultatSida = 0;
 
 visaResultat();
 // Hämta nya resultat varje minut (lite mer än API-cachens 60 sekunder)

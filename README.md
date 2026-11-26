@@ -52,7 +52,16 @@ js/<sida>.js        Koden för respektive sida
 worker/worker.js    Mellanhanden på Cloudflare
 wrangler.toml       Inställningar för mellanhanden
 sitemap.xml         Lista över sidorna för Google
+manifest.json       Appens namn, ikon och färger (PWA)
+sw.js               Service worker: gör sidan installerbar och sparar den för användning utan nät
+ikoner/             App-ikoner och favicon
 ```
+
+### Som app på mobilen (PWA)
+
+JodaFoot kan installeras som en app. Öppna hemsidan i mobilens webbläsare och välj **Lägg till på hemskärmen** (Safari: dela-knappen → *Lägg till på hemskärmen*; Chrome: menyn ⋮ → *Installera app*). Appen får en egen ikon och öppnas i helskärm.
+
+`sw.js` hämtar alltid hemsidans filer från nätet först, så appen visar direkt den senaste versionen efter en uppdatering. Utan nät visas de senast sparade sidorna. Fotbollsdatan hämtas alltid från mellanhanden. Ändras listan över filer i `sw.js` kan man byta namnet på `CACHE` (t.ex. `jodafoot-v2`) så att gamla sparade filer rensas.
 
 ### Datakällor
 

@@ -1,0 +1,17 @@
+{
+  "name": "JodaFoot",
+  "short_name": "JodaFoot",
+  "description": "Matcher, resultat, tabeller, laguppställningar och övergångar från Europas största ligor.",
+  "lang": "sv",
+  "start_url": "./foljer.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2a1570",
+  "theme_color": "#2a1570",
+  "icons": [
+    { "src": "ikoner/ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ikoner/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ikoner/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

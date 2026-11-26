@@ -12,6 +12,11 @@ menylankar.forEach(function (lank) {
   }
 });
 
+// 1b. Gör hemsidan installerbar som app på mobilen ("Lägg till på hemskärmen"), se sw.js
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(function () {});
+}
+
 // 2. Sätt rätt årtal i footern automatiskt
 const arElement = document.getElementById("ar");
 if (arElement) {

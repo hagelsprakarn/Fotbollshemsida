@@ -629,7 +629,9 @@ function lasFaktaruta(text) {
   const falt = {};
   delar.slice(1).forEach(function (del) {
     const lika = del.indexOf("=");
-    if (lika > 0) falt[del.slice(0, lika).trim().toLowerCase()] = del.slice(lika + 1).trim();
+    // Wikipedia har bytt namn på fälten (t.ex. "currentclub" -> "current_club"), så vi tar bort
+    // understreck och bindestreck i namnen. Då fungerar både gamla och nya namn.
+    if (lika > 0) falt[del.slice(0, lika).trim().toLowerCase().replace(/[_-]/g, "")] = del.slice(lika + 1).trim();
   });
   return falt;
 }
@@ -702,9 +704,9 @@ async function hamtaSpelare(namn, lag) {
     sammanfattning: sida.extract || "",
     bild: sida.thumbnail ? sida.thumbnail.source : "",
     namn: rensaWiki(falt.name),
-    fulltNamn: rensaWiki(falt.full_name),
-    fodd: fodelsedag(falt.birth_date),
-    fodelseort: rensaWiki(falt.birth_place),
+    fulltNamn: rensaWiki(falt.fullname),
+    fodd: fodelsedag(falt.birthdate),
+    fodelseort: rensaWiki(falt.birthplace),
     langd: langd(falt.height),
     position: rensaWiki(falt.position),
     klubb: rensaWiki(falt.currentclub),
@@ -713,7 +715,7 @@ async function hamtaSpelare(namn, lag) {
     karriar: numreradLista(falt, "", ["years", "clubs", "caps", "goals"]),
     landslag: numreradLista(falt, "national", ["years", "team", "caps", "goals"]),
     meriter: lasMeriter(falt.medaltemplates),
-    uppdaterad: rensaWiki(falt["club-update"] || falt.pcupdate || "")
+    uppdaterad: rensaWiki(falt.clubupdate || falt.pcupdate || "")
   };
 }
 
@@ -995,7 +997,7 @@ export default {
       if (!namn) {
         return new Response("Saknar namn", { status: 400, headers: headers });
       }
-      const cacheNyckel = new Request("https://cache.lokal/spelare/" + encodeURIComponent(normalisera(namn) + "|" + normalisera(lag)));
+      const cacheNyckel = new Request("https://cache.lokal/spelare-v2/" + encodeURIComponent(normalisera(namn) + "|" + normalisera(lag)));
       let svar = await caches.default.match(cacheNyckel);
       if (!svar) {
         let data;

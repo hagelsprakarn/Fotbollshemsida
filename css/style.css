@@ -1384,3 +1384,84 @@ tr.trupp-lank:hover td.lag span,
   margin-left: 4px;
   color: var(--farg-text-dampad);
 }
+
+/* ============================================
+   MOBIL OCH SURFPLATTA (skärmar smalare än 800 px)
+   Ligger sist i filen så att den gäller över allt ovanför.
+   ============================================ */
+@media (max-width: 800px) {
+  /* En kolumn som aldrig blir bredare än skärmen (minmax(0, 1fr) hindrar
+     breda tabeller och planen från att trycka ut sidan åt höger) */
+  .startsida-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  /* Menyn: fem lika breda knappar på en rad */
+  .sidomeny {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .sidomeny a {
+    justify-content: center;
+    height: 42px;
+    min-height: 0;
+    padding: 0;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  /* Rutorna blir så höga som innehållet, man scrollar sidan som vanligt */
+  .huvudkort,
+  .sidokort {
+    min-width: 0;
+    height: auto;
+    overflow: visible;
+    border-radius: 20px;
+    padding-bottom: 12px;
+  }
+  /* Matcher och Nyheter bläddrar mellan sidor och behöver en fast höjd,
+     men bara när det finns sidor (annars t.ex. "Inga matcher idag") */
+  .huvudkort.bladdra-kort:has(.mr-sidruta) {
+    height: 78vh;
+    overflow: hidden;
+  }
+  /* En tom högerruta (t.ex. innan något har laddats) visas inte */
+  .sidokort:empty {
+    display: none;
+  }
+
+  .kort-rubrik {
+    padding-top: 14px;
+    font-size: 24px;
+  }
+
+  /* Tabeller: lite mindre text så att alla kolumner får plats */
+  .liga-tabell {
+    width: calc(100% - 16px);
+    margin: 12px 8px;
+    font-size: 12px;
+  }
+  .liga-tabell th,
+  .liga-tabell td {
+    padding: 6px 3px;
+  }
+
+  /* Bläddringspilarna hamnar annars över innehållet */
+  .mr-pil {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+  }
+
+  /* Lite större minsta textstorlek där texten annars blir väldigt liten */
+  .re-dag,
+  .ov-detaljer,
+  .ma-skadeinfo,
+  .ma-skadestatus {
+    font-size: 11px;
+  }
+}

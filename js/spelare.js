@@ -179,6 +179,7 @@ function visaSpelare(wiki, fd, namn, lagnamn) {
     ["Land", fdSpelare ? fdSpelare.land : ""],
     ["Tröjnummer", wiki ? wiki.nummer : ""]
   ].filter(function (par) { return par[1]; });
+  const oversikt = skapa("div", "sp-oversikt");
   const rutnat = skapa("div", "sp-fakta");
   fakta.forEach(function (par) {
     const ruta = skapa("div", "sp-faktaruta");
@@ -186,46 +187,55 @@ function visaSpelare(wiki, fd, namn, lagnamn) {
     ruta.appendChild(skapa("div", "sp-varde", par[1]));
     rutnat.appendChild(ruta);
   });
-  kort.appendChild(rutnat);
+  oversikt.appendChild(rutnat);
 
   if (!wiki) {
-    kort.appendChild(skapa("p", "mr-meddelande", "Hittade ingen mer information om spelaren."));
+    oversikt.appendChild(skapa("p", "mr-meddelande", "Hittade ingen mer information om spelaren."));
+    kort.appendChild(oversikt);
     return;
   }
 
+  // Resten ligger i flikar, så att sidan inte behöver skrollas. Flikar utan innehåll visas inte.
+  let karriar = null;
   if (wiki.karriar.length > 0) {
-    kort.appendChild(skapa("h2", "mr-dag", "Klubbkarriär"));
-    kort.appendChild(byggTabell(wiki.karriar, "Klubb"));
+    karriar = skapa("div");
+    karriar.appendChild(byggTabell(wiki.karriar, "Klubb"));
+    if (wiki.uppdaterad) {
+      karriar.appendChild(skapa("p", "sp-kalla", "Uppdaterad " + wiki.uppdaterad + " (ligamatcher)."));
+    }
   }
-  if (wiki.landslag.length > 0) {
-    kort.appendChild(skapa("h2", "mr-dag", "Landslag"));
-    kort.appendChild(byggTabell(wiki.landslag, "Lag"));
-  }
+
+  const landslag = wiki.landslag.length > 0 ? byggTabell(wiki.landslag, "Lag") : null;
+
+  let ungdom = null;
   if (wiki.ungdom.length > 0) {
-    kort.appendChild(skapa("h2", "mr-dag", "Ungdomsklubbar"));
-    const lista = skapa("div", "sp-ungdom");
+    ungdom = skapa("div", "sp-ungdom");
     wiki.ungdom.forEach(function (rad) {
       const del = skapa("div", "sp-ungdomsrad");
       del.appendChild(skapa("span", "sp-etikett", rad.ar));
       del.appendChild(skapa("span", "", rad.klubb));
-      lista.appendChild(del);
+      ungdom.appendChild(del);
     });
-    kort.appendChild(lista);
   }
+
+  let meriter = null;
   if (wiki.meriter.length > 0) {
-    kort.appendChild(skapa("h2", "mr-dag", "Meriter"));
-    const lista = skapa("div", "sp-meriter");
+    meriter = skapa("div", "sp-meriter");
     wiki.meriter.forEach(function (merit) {
       const rad = skapa("div", "sp-merit");
       rad.appendChild(skapa("span", "sp-medalj plats-" + merit.plats, ["Guld", "Silver", "Brons"][merit.plats - 1]));
       rad.appendChild(skapa("span", "", turneringSvenska(merit.turnering) + " " + merit.tillfalle));
-      lista.appendChild(rad);
+      meriter.appendChild(rad);
     });
-    kort.appendChild(lista);
   }
-  if (wiki.uppdaterad) {
-    kort.appendChild(skapa("p", "sp-kalla", "Klubbstatistiken är uppdaterad " + wiki.uppdaterad + " (ligamatcher)."));
-  }
+
+  kort.appendChild(byggFlikar([
+    { namn: "Översikt", innehall: oversikt },
+    { namn: "Karriär", innehall: karriar },
+    { namn: "Ungdom", innehall: ungdom },
+    { namn: "Landslag", innehall: landslag },
+    { namn: "Meriter", innehall: meriter }
+  ], { adress: true }));
 }
 
 async function startaSpelare() {

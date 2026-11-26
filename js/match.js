@@ -47,7 +47,7 @@ function byggMal(mal, match) {
       namn.href = spelarLank(m.spelare, spelarensLag.name || spelarensLag.shortName);
       rad.appendChild(namn);
       rad.appendChild(skapa("span", "ma-minut", m.minut + (m.straff ? " (str)" : "") + (m.sjalvmal ? " (självmål)" : "")));
-      if (m.assist) rad.title = "Assist: " + m.assist;
+      if (m.assist) rad.appendChild(skapa("div", "ma-assist", "Assist: " + m.assist));
       kolumn.appendChild(rad);
     });
     ruta.appendChild(kolumn);
@@ -55,8 +55,36 @@ function byggMal(mal, match) {
   return ruta;
 }
 
+// Fliken Översikt: målen (med assist), halvtidsresultat och domare
+function byggOversikt(match, mal) {
+  const ruta = skapa("div", "ma-oversikt");
+
+  if (harStartat(match)) {
+    ruta.appendChild(skapa("h3", "mr-dag", "Mål"));
+    const malen = (mal && mal.mal) || [];
+    if (malen.length > 0) {
+      ruta.appendChild(byggMal(malen, match));
+    } else {
+      ruta.appendChild(skapa("p", "ma-fakta", "Inga mål än."));
+    }
+  } else {
+    ruta.appendChild(skapa("p", "ma-fakta", statusText(match)));
+  }
+
+  // Halvtid och domare, om vi vet dem
+  const fakta = [];
+  if (harStartat(match) && match.score.halfTime.home !== null) {
+    fakta.push("Halvtid " + match.score.halfTime.home + " – " + match.score.halfTime.away);
+  }
+  const domare = (match.referees || []).find(function (d) { return d.type === "REFEREE"; });
+  if (domare) fakta.push("Domare: " + domare.name);
+  if (fakta.length > 0) ruta.appendChild(skapa("div", "ma-fakta", fakta.join(" · ")));
+
+  return ruta;
+}
+
 // Överst: turnering, lagen och resultatet (eller avsparkstiden)
-function byggHuvud(match, mal) {
+function byggHuvud(match) {
   const huvud = skapa("div", "ma-huvud");
 
   const tillbaka = skapa("a", "liga-tillbaka", "‹ Matcher");
@@ -86,20 +114,6 @@ function byggHuvud(match, mal) {
     rad.appendChild(ruta);
   });
   huvud.appendChild(rad);
-
-  if (harStartat(match) && mal && mal.mal && mal.mal.length > 0) {
-    huvud.appendChild(byggMal(mal.mal, match));
-  }
-
-  // Halvtid och domare, om vi vet dem
-  const fakta = [];
-  if (harStartat(match) && match.score.halfTime.home !== null) {
-    fakta.push("Halvtid " + match.score.halfTime.home + " – " + match.score.halfTime.away);
-  }
-  const domare = (match.referees || []).find(function (d) { return d.type === "REFEREE"; });
-  if (domare) fakta.push("Domare: " + domare.name);
-  if (fakta.length > 0) huvud.appendChild(skapa("div", "ma-fakta", fakta.join(" · ")));
-
   return huvud;
 }
 
@@ -157,23 +171,22 @@ function byggUppstallning(data, match) {
     return sektion;
   }
 
-  const forvantad = data.typ === "forvantad";
-  sektion.appendChild(skapa("h2", "mr-dag", forvantad ? "Förväntade startelvor" : "Startelvor"));
-  if (forvantad) {
-    sektion.appendChild(skapa("p", "ma-forklaring", "Startelvorna är inte släppta än. Här visas lagens startelvor från deras förra match."));
+  if (data.typ === "forvantad") {
+    sektion.appendChild(skapa("p", "ma-forklaring", "Förväntade startelvor: lagens startelvor från deras förra match."));
   }
 
-  // Lagnamn och formation ovanför och under planen
+  // Lagnamn och formation. På datorn står de bredvid varandra ovanför den liggande planen,
+  // på mobilen över och under den stående planen (se CSS).
   function etikett(lag, fdLag) {
     return (fdLag.shortName || fdLag.name) + (lag && lag.formation ? "  " + lag.formation : "");
   }
 
-  sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[1], match.awayTeam)));
+  sektion.appendChild(skapa("div", "ma-formation borta", etikett(data.lag[1], match.awayTeam)));
   const plan = skapa("div", "ma-plan");
   plan.appendChild(byggPlanhalva(data.lag[1], false, match.awayTeam.name || match.awayTeam.shortName));
   plan.appendChild(byggPlanhalva(data.lag[0], true, match.homeTeam.name || match.homeTeam.shortName));
   sektion.appendChild(plan);
-  sektion.appendChild(skapa("div", "ma-formation", etikett(data.lag[0], match.homeTeam)));
+  sektion.appendChild(skapa("div", "ma-formation hemma", etikett(data.lag[0], match.homeTeam)));
 
   return sektion;
 }
@@ -258,10 +271,10 @@ function byggSkadekolumn(lag, skador) {
 }
 
 // Skadelistan visas bara inför och under matchen, för den visar dagens skador
+// (för en färdig match blir det ingen flik alls)
 function byggSkadelista(skador, match) {
+  if (match.status === "FINISHED") return null;
   const sektion = skapa("div", "ma-skadelista");
-  if (match.status === "FINISHED") return sektion;
-  sektion.appendChild(skapa("h2", "mr-dag", "Skadelista"));
   const kolumner = skapa("div", "ma-skadekolumner");
   kolumner.appendChild(byggSkadekolumn(match.homeTeam, skador));
   kolumner.appendChild(byggSkadekolumn(match.awayTeam, skador));
@@ -321,7 +334,13 @@ async function visaMatch() {
 
   document.title = "JodaFoot – " + (match.homeTeam.shortName || match.homeTeam.name) +
     " – " + (match.awayTeam.shortName || match.awayTeam.name);
-  kort.replaceChildren(byggHuvud(match, mal), byggUppstallning(uppstallning, match), byggSkadelista(skador, match));
+  // Lagen och resultatet står alltid överst, resten ligger i flikar så att inget behöver skrollas.
+  // Innan matchen har börjat finns inget att visa i översikten, då öppnas uppställningen först.
+  kort.replaceChildren(byggHuvud(match), byggFlikar([
+    { namn: "Översikt", innehall: byggOversikt(match, mal) },
+    { namn: "Uppställning", innehall: byggUppstallning(uppstallning, match) },
+    { namn: "Skadelista", innehall: byggSkadelista(skador, match) }
+  ], { adress: true, vald: harStartat(match) ? "Översikt" : "Uppställning" }));
   visaAvbytare(uppstallning, match);
 
   // Uppdatera varje minut tills matchen är slut

@@ -204,11 +204,12 @@ function visaTrupp(lag, valdSpelare) {
     innehall.appendChild(skapa("p", "mr-meddelande", "Truppen finns inte för det här laget."));
   }
 
-  // Spelarna sorterade i målvakter, försvarare, mittfältare och anfallare
-  POSITIONER.forEach(function (rubrik, grupp) {
+  // En flik per position (målvakter, försvarare, mittfältare, anfallare), med spelarna
+  // i två kolumner, så att truppen inte behöver skrollas
+  const flikar = POSITIONER.map(function (rubrik, grupp) {
     const ispelare = lag.spelare.filter(function (s) { return positionsgrupp(s.position) === grupp; });
-    if (ispelare.length === 0) return;
-    innehall.appendChild(skapa("h3", "mr-dag", rubrik));
+    if (ispelare.length === 0) return { namn: rubrik, innehall: null };
+    const rutnat = skapa("div", "sok-truppnat");
     ispelare.forEach(function (s) {
       const rad = skapa("div", "sok-rad" + (valdSpelare && s.id === valdSpelare.id ? " vald" : ""));
       rad.appendChild(byggAnsikte(s, lag, "sok-ansikte"));
@@ -220,13 +221,17 @@ function visaTrupp(lag, valdSpelare) {
       text.appendChild(skapa("div", "sok-info", info.join(" · ")));
       rad.appendChild(text);
       rad.addEventListener("click", function () { oppnaSpelare(s, lag); });
-      innehall.appendChild(rad);
+      rutnat.appendChild(rad);
     });
+    return { namn: rubrik, innehall: rutnat };
   });
 
-  // Kommer man tillbaka från en spelarsida är den spelaren markerad
+  // Kommer man tillbaka från en spelarsida öppnas fliken med den spelaren, som är markerad
+  innehall.appendChild(byggFlikar(flikar, {
+    vald: valdSpelare ? POSITIONER[positionsgrupp(valdSpelare.position)] : null
+  }));
   const vald = innehall.querySelector(".sok-rad.vald");
-  if (vald) vald.scrollIntoView({ block: "center" });
+  if (vald) vald.scrollIntoView({ block: "nearest" });
 }
 
 // ============================================

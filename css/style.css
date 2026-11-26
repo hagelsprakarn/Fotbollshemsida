@@ -1386,6 +1386,177 @@ tr.trupp-lank:hover td.lag span,
 }
 
 /* ============================================
+   FLIKAR (matchsidan, spelarsidan och truppen i Sök)
+   Överst en del som alltid syns, under den flikar. Fliken fyller resten av
+   rutan, så att inget behöver skrollas.
+   ============================================ */
+[hidden] {
+  display: none !important;
+}
+#match,
+#spelare,
+#sok-kort {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#sok-innehall {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;   /* sökresultaten kan vara fler än vad som får plats */
+}
+.flikruta {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.flikruta > .fo-flikar {
+  flex-shrink: 0;
+  margin-top: 1vh;
+}
+.flikinnehall {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;   /* bara om något undantagsvis inte får plats */
+}
+
+/* Matchsidan: lite mindre lagmärken överst så att flikarna får mer plats */
+.ma-lag img {
+  width: clamp(40px, 3.2vw, 64px);
+  height: clamp(40px, 3.2vw, 64px);
+}
+.ma-lagrad {
+  margin-top: 1vh;
+}
+.ma-oversikt .mr-dag {
+  text-align: center;
+  text-transform: none;
+}
+.ma-oversikt .ma-mal {
+  margin-top: 0;
+}
+.ma-assist {
+  color: var(--farg-text-dampad);
+  font-size: clamp(10px, 0.7vw, 13px);
+  line-height: 1.2;
+}
+.ma-skadelista {
+  padding-top: 1vh;
+}
+
+/* Uppställningen: lagnamn och formation bredvid varandra ovanför planen */
+.ma-uppstallning {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "forklaring forklaring"
+    "hemma borta"
+    "plan plan";
+  align-content: start;
+  padding-bottom: 1vh;
+}
+.ma-uppstallning .ma-forklaring { grid-area: forklaring; margin-top: 0.5vh; }
+.ma-uppstallning .mr-meddelande { grid-column: 1 / -1; }
+.ma-formation.hemma { grid-area: hemma; text-align: left; }
+.ma-formation.borta { grid-area: borta; text-align: right; }
+.ma-plan { grid-area: plan; }
+
+/* På datorn ligger planen ner: hemmalaget till vänster (målvakten längst till
+   vänster), bortalaget till höger. Då får planen plats i rutan. */
+@media (min-width: 801px) {
+  .ma-plan {
+    flex-direction: row-reverse;
+    aspect-ratio: 5 / 3;
+    width: min(calc(100% - 4vw), calc((76.9vh - 330px) * 5 / 3));
+    margin: 0 auto;
+    background: repeating-linear-gradient(90deg, #2f8f46 0, #2f8f46 10%, #2a8340 10%, #2a8340 20%);
+  }
+  .ma-plan::before {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    border-top: none;
+    border-left: 2px solid rgba(255, 255, 255, 0.5);
+  }
+  /* min-width: 0 låter planhalvan krympa sina kolumner, annars hamnar lag med
+     fem rader (t.ex. 3-1-4-2) delvis utanför planen */
+  .ma-halva {
+    min-width: 0;
+    flex-direction: row;
+    padding: 0 0.5vw;
+  }
+  .ma-halva.hemma {
+    flex-direction: row;
+  }
+  .ma-halva.borta {
+    flex-direction: row-reverse;
+  }
+  .ma-rad {
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+  }
+  .ma-spelare {
+    width: 100%;
+  }
+  .ma-ansikte,
+  .ma-nummer {
+    width: clamp(28px, 2.3vw, 44px);
+    height: clamp(28px, 2.3vw, 44px);
+  }
+}
+
+/* Spelarsidan: lite mindre bild överst */
+.sp-ansikte {
+  width: clamp(76px, 6vw, 112px);
+  height: clamp(76px, 6vw, 112px);
+}
+.sp-huvud {
+  margin-bottom: 0;
+}
+
+/* Truppen i Sök: spelarna i två kolumner, lite mindre lagmärke */
+.sok-truppnat {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;   /* raderna ska inte sträckas ut när det är få spelare */
+  gap: 0.8vh 0.8vw;
+  margin: 0.5vh 2vw 1vh;
+}
+.sok-truppnat .sok-rad {
+  margin: 0;
+  padding: 0.6vh 0.8vw;
+}
+.sok-truppnat .sok-ansikte {
+  width: clamp(30px, 2.2vw, 40px);
+  height: clamp(30px, 2.2vw, 40px);
+}
+/* Lagets rubrik på en rad: märket till vänster, namn, ligor och tränare till höger */
+.sok-laghuvud {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 0;
+  text-align: left;
+}
+.sok-storlogga {
+  grid-row: span 3;
+  width: clamp(44px, 3.6vw, 64px);
+  height: clamp(44px, 3.6vw, 64px);
+}
+.sok-lagnamn {
+  font-size: clamp(16px, 1.4vw, 28px);
+}
+
+/* ============================================
    MOBIL OCH SURFPLATTA (skärmar smalare än 800 px)
    Ligger sist i filen så att den gäller över allt ovanför.
    ============================================ */
@@ -1463,6 +1634,31 @@ tr.trupp-lank:hover td.lag span,
   .ma-skadeinfo,
   .ma-skadestatus {
     font-size: 11px;
+  }
+
+  /* Flikarna: på mobilen skrollar man sidan som vanligt */
+  #match,
+  #spelare,
+  #sok-kort,
+  #sok-innehall,
+  .flikinnehall {
+    overflow: visible;
+  }
+  /* Stående plan: bortalaget över, hemmalaget under. Lite högre än på datorn
+     så att lag med fem rader (t.ex. 3-1-4-2) får plats. */
+  .ma-plan {
+    aspect-ratio: 9 / 16;
+  }
+  .ma-uppstallning {
+    grid-template-columns: 1fr;
+    grid-template-areas: "forklaring" "borta" "plan" "hemma";
+  }
+  .ma-formation.hemma,
+  .ma-formation.borta {
+    text-align: center;
+  }
+  .sok-truppnat {
+    grid-template-columns: 1fr;
   }
 }
 

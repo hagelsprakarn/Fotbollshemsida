@@ -598,9 +598,10 @@ async function hittaWikiSpelare(namn, lag) {
 // Läser faktarutan till ett objekt { name: "...", clubs1: "...", ... }.
 // Fälten skiljs åt med "|", men "|" finns också inuti länkar [[...|...]] och mallar {{...|...}},
 // så vi går igenom texten tecken för tecken och delar bara där vi inte är inuti något.
-function lasFaktaruta(text) {
+// "mall" är vilken sorts faktaruta: "football biography" (spelare) eller "football club" (klubbar).
+function lasFaktaruta(text, mall) {
   const rensad = text.replace(/<!--[\s\S]*?-->/g, "");
-  const start = rensad.search(/\{\{\s*Infobox football biography/i);
+  const start = rensad.search(new RegExp("\\{\\{\\s*Infobox " + (mall || "football biography"), "i"));
   if (start < 0) return null;
 
   const delar = [];
@@ -717,6 +718,38 @@ async function hamtaSpelare(namn, lag) {
     meriter: lasMeriter(falt.medaltemplates),
     uppdaterad: rensaWiki(falt.clubupdate || falt.pcupdate || "")
   };
+}
+
+// Lagets tränare från klubbens Wikipedia-sida (fältet "manager" eller "head_coach" i
+// faktarutan). football-data har ibland gamla tränare, t.ex. Pierre Sage för Crystal Palace.
+async function hamtaTranare(lag) {
+  const adress = "https://en.wikipedia.org/w/api.php?action=query&format=json&generator=search&gsrlimit=4" +
+    "&prop=description&gsrsearch=" + encodeURIComponent(lag + " football club");
+  const svar = await fetch(adress, { headers: WIKI_HUVUD });
+  if (!svar.ok) return { tranare: "" };
+  const data = await svar.json();
+  const sidor = Object.values((data.query && data.query.pages) || {})
+    .sort(function (a, b) { return a.index - b.index; });
+  // Sidan ska handla om en fotbollsklubb. Damlag, ungdomslag och reservlag
+  // (t.ex. "Arsenal W.F.C.") hoppar vi över.
+  const klubbar = sidor.filter(function (p) {
+    const text = (p.title || "") + " " + (p.description || "");
+    return /football club|association football/i.test(p.description || "") &&
+      !/women|ladies|w\.f\.c|under-\d|u-?\d\d\b|reserve|academy|youth/i.test(text);
+  });
+  // Bäst är ett namn som börjar likadant ("Manchester United F.C.", inte "F.C. United of
+  // Manchester"), sedan ett namn med gemensamma ord ("FC Bayern Munich"), och sist
+  // Wikipedias bästa sökträff ("Inter Milan" för "FC Internazionale Milano")
+  const sida = klubbar.find(function (p) { return sammaKlubb(p.title, lag); }) ||
+    klubbar.find(function (p) { return liknar(p.title, lag); }) ||
+    klubbar[0];
+  if (!sida) return { tranare: "" };
+
+  const text = await fetch("https://en.wikipedia.org/w/index.php?action=raw&section=0&title=" +
+    encodeURIComponent(sida.title.replace(/ /g, "_")), { headers: WIKI_HUVUD });
+  const falt = text.ok ? lasFaktaruta(await text.text(), "football club") : null;
+  if (!falt) return { tranare: "" };
+  return { tranare: rensaWiki(falt.manager || falt.headcoach || falt.coach || ""), sida: sida.title };
 }
 
 // Svarar med { bild, lange }. "lange" = får sparas länge. Är TheSportsDB upptaget
@@ -986,6 +1019,33 @@ export default {
         if (!misslyckades) {
           ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()).catch(function () {}));
         }
+      }
+      return svar;
+    }
+
+    // /tranare?lag=Crystal Palace FC ger lagets tränare från Wikipedia, sparat ett dygn
+    if (url.pathname === "/tranare") {
+      const lag = url.searchParams.get("lag") || "";
+      if (!lag) {
+        return new Response("Saknar lag", { status: 400, headers: headers });
+      }
+      const cacheNyckel = new Request("https://cache.lokal/tranare/" + encodeURIComponent(normalisera(lag)));
+      let svar = await caches.default.match(cacheNyckel);
+      if (!svar) {
+        let data;
+        try {
+          data = await hamtaTranare(lag);
+        } catch (fel) {
+          data = { tranare: "" };
+        }
+        svar = new Response(JSON.stringify(data), {
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=86400" }
+        });
+        ctx.waitUntil(caches.default.put(cacheNyckel, svar.clone()));
+      }
+      svar = new Response(svar.body, svar);
+      for (const [namn, varde] of Object.entries(headers)) {
+        svar.headers.set(namn, varde);
       }
       return svar;
     }

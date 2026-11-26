@@ -197,7 +197,13 @@ function visaTrupp(lag, valdSpelare) {
   huvud.appendChild(skapaLogga(lag.logga, "sok-storlogga"));
   huvud.appendChild(skapa("h2", "sok-lagnamn", lag.namn));
   huvud.appendChild(skapa("div", "sok-info", lag.ligor.join(" · ")));
-  if (lag.tranare) huvud.appendChild(skapa("div", "sok-tranare", "Tränare: " + lag.tranare));
+  // Tränaren: football-data har ibland gamla uppgifter, så vi frågar också klubbens
+  // Wikipedia-sida (via mellanhanden) och använder den om den har ett namn
+  const tranare = skapa("div", "sok-tranare", lag.tranare ? "Tränare: " + lag.tranare : "");
+  huvud.appendChild(tranare);
+  hamtaFranApi("/tranare?lag=" + encodeURIComponent(lag.namn)).then(function (svar) {
+    if (svar && svar.tranare) tranare.textContent = "Tränare: " + svar.tranare;
+  });
   innehall.appendChild(huvud);
 
   if (lag.spelare.length === 0) {

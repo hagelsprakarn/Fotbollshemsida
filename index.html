@@ -3,32 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JodaFoot – Hem</title>
+  <title>JodaFoot</title>
+  <!-- Startsidan skickar vidare till Följer, som är hemsidans första sida -->
+  <meta http-equiv="refresh" content="0; url=foljer.html">
   <link rel="stylesheet" href="css/style.css">
+  <script>window.location.replace("foljer.html");</script>
 </head>
 <body class="startsida">
-
-  <div class="startsida-layout">
-
-    <!-- Menyn till vänster -->
-        <nav class="sidomeny">
-      <a href="foljer.html">Följer</a>
-      <a href="ligor.html">Ligor</a>
-      <a href="matcher.html">Matcher</a>
-      <a href="nyheter.html">Nyheter</a>
-      <a href="sok.html">Sök</a>
-    </nav>
-
-    <!-- Stora kortet i mitten (här fyller vi på innehåll senare) -->
-        <main class="huvudkort" id="foljer-lista">
-      <h1 class="kort-rubrik">Följer</h1>
-    </main>
-
-    <!-- Smala kortet till höger (här fyller vi på innehåll senare) -->
-    <aside class="sidokort" id="sidokort"></aside>
-
-  </div>
-
-  <script src="js/script.js"></script>
+  <p class="mr-meddelande"><a href="foljer.html">Gå till JodaFoot</a></p>
 </body>
 </html>

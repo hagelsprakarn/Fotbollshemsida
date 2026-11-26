@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Lista över hemsidans sidor för Google (skickas in i Google Search Console) -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/</loc></url>
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/foljer.html</loc></url>
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/ligor.html</loc></url>
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/matcher.html</loc></url>
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/nyheter.html</loc></url>
+  <url><loc>https://hagelsprakarn.github.io/Fotbollshemsida/sok.html</loc></url>
+</urlset>

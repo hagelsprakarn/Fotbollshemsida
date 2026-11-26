@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Caprasimo&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=Inter:wght@400;500;600;700;800&display=swap');
 /* ============================================
    FÄRGER OCH TYPSNITT
    Byt ut värdena här när ni har bestämt design.
@@ -10,7 +10,10 @@
   --farg-text: #ffffff;
   --farg-text-dampad: #c9c4e6;
   --farg-accent: #00a86b;       /* ingen accentfärg fanns i layouten, byt när ni vet */
-  --typsnitt: "Cooper Black", "Caprasimo", Georgia, serif;
+  /* Inter för all text: lättläst även i små storlekar och för siffror (samma som FotMob) */
+  --typsnitt: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  /* Cooper Black/Caprasimo ger sidan personlighet, men bara på de stora rubrikerna */
+  --typsnitt-rubrik: "Cooper Black", "Caprasimo", Georgia, serif;
 }
 
 /* ============================================
@@ -31,6 +34,7 @@ body {
   background-color: var(--farg-bakgrund);
   color: var(--farg-text);
   font-family: var(--typsnitt);
+  font-weight: 500;
   line-height: 1.5;
   /* Dölj skrivmarkören (strecket) när man klickar på vanlig text */
   caret-color: transparent;
@@ -190,7 +194,8 @@ body.startsida {
   color: var(--farg-text);
   border-radius: 0.8vw;
   text-decoration: none;
-  font-size: clamp(14px, 1.45vw, 30px);
+  font-size: clamp(14px, 1.3vw, 26px);
+  font-weight: 700;
 }
 
 .sidomeny a:hover {
@@ -244,7 +249,7 @@ body.startsida {
   padding-top: 2vh;
   text-align: center;
   color: var(--farg-text);       /* vit, samma som menyknapparna */
-  font-family: var(--typsnitt);  /* samma typsnitt som menyknapparna */
+  font-family: var(--typsnitt-rubrik);  /* rubriktypsnittet, se :root */
   font-weight: normal;
   font-size: clamp(20px, 2.2vw, 44px);
 }
@@ -260,7 +265,7 @@ body.startsida {
 .mr-dag {
   margin: 3vh 2vw 1vh;
   font-family: var(--typsnitt);
-  font-weight: normal;
+  font-weight: 700;
   font-size: clamp(14px, 1.2vw, 22px);
   color: var(--farg-text-dampad);
   text-transform: capitalize;
@@ -277,6 +282,7 @@ body.startsida {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 12px;
   font-family: var(--typsnitt);
+  font-weight: 600;
   font-size: clamp(13px, 1.1vw, 20px);
 }
 
@@ -365,7 +371,7 @@ body.startsida {
 .ny-rubrik {
   margin: 0.3vh 0;
   font-family: var(--typsnitt);
-  font-weight: normal;
+  font-weight: 700;
   font-size: clamp(14px, 1.15vw, 21px);
   line-height: 1.25;
 }
@@ -477,6 +483,7 @@ body.startsida {
 }
 .liga-namn {
   font-family: var(--typsnitt);
+  font-weight: 600;
   font-size: clamp(14px, 1.15vw, 21px);
 }
 .liga-land {
@@ -501,7 +508,7 @@ body.startsida {
 }
 .liga-tabell th {
   color: var(--farg-text-dampad);
-  font-weight: normal;
+  font-weight: 600;
   padding: 0.6vh 0.4vw;
   text-align: center;
 }
@@ -538,7 +545,7 @@ body.startsida {
   margin: 2vh 0 1vh;
   text-align: center;
   font-family: var(--typsnitt);
-  font-weight: normal;
+  font-weight: 700;
   font-size: clamp(14px, 1.1vw, 20px);
 }
 .fo-minlag {
@@ -700,7 +707,7 @@ body.startsida {
   margin: 2vh 0.6vw 0.8vh;
   text-align: center;
   font-family: var(--typsnitt);
-  font-weight: normal;
+  font-weight: 600;
   font-size: clamp(11px, 0.8vw, 15px);
   color: var(--farg-text-dampad);
 }
@@ -1123,7 +1130,7 @@ a.re-match:hover {
 }
 .sok-lagnamn {
   margin: 0;
-  font-family: var(--typsnitt);
+  font-family: var(--typsnitt-rubrik);
   font-weight: normal;
   font-size: clamp(18px, 1.8vw, 34px);
 }
@@ -1208,7 +1215,7 @@ a.re-match:hover {
 }
 .sp-namn {
   margin: 1vh 0 0;
-  font-family: var(--typsnitt);
+  font-family: var(--typsnitt-rubrik);
   font-weight: normal;
   font-size: clamp(22px, 2.2vw, 42px);
   line-height: 1.1;
@@ -1756,7 +1763,7 @@ tr.trupp-lank:hover td.lag span,
 .mr-status {
   margin-top: 2px;
   font-size: clamp(9px, 0.65vw, 12px);
-  font-weight: normal;
+  font-weight: 600;
   color: var(--farg-text-dampad);
   letter-spacing: 0.5px;
 }
@@ -1847,4 +1854,19 @@ tr.trupp-lank:hover td.lag span,
 .mr-sidfot .mr-pil[hidden] {
   display: inline-block !important;
   visibility: hidden;
+}
+
+/* ============================================
+   SIFFROR
+   Alla siffror lika breda, så att kolumner i tabeller och resultat linjerar
+   ============================================ */
+.liga-tabell,
+.mr-mitten,
+.re-mal,
+.ma-resultat,
+.ma-minut {
+  font-variant-numeric: tabular-nums;
+}
+.ma-resultat {
+  font-weight: 800;
 }

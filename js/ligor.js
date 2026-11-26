@@ -160,30 +160,51 @@ async function visaTabell(huvudkort, liga) {
   // Den totala tabellen (det finns även hemma- och bortatabeller som vi hoppar över)
   const tabellData = data.standings.find(function (s) { return s.type === "TOTAL"; }) || data.standings[0];
 
-  const huvud = document.createElement("tr");
-  ["#", "Lag", "S", "V", "O", "F", "+/-", "P"].forEach(function (text, i) {
-    huvud.appendChild(skapa("th", i === 1 ? "lag" : "", text));
-  });
-
-  const rader = tabellData.table.map(function (rad) {
-    const tr = document.createElement("tr");
-    tr.appendChild(skapa("td", "", rad.position));
-
-    const lag = skapa("td", "lag");
-    if (rad.team.crest) lag.appendChild(skapaLogga(rad.team.crest));
-    lag.appendChild(skapa("span", "", rad.team.shortName || rad.team.name));
-    tr.appendChild(lag);
-    gorTillTruppLank(tr, rad.team);   // klick var som helst på raden visar lagets trupp
-
-    [rad.playedGames, rad.won, rad.draw, rad.lost, rad.goalDifference].forEach(function (varde) {
-      tr.appendChild(skapa("td", "", varde));
+  // Tabellen visas i två kolumner sida vid sida: första halvan av lagen till vänster och
+  // resten till höger (t.ex. 1–10 och 11–20, eller 1–18 och 19–36 i Champions League).
+  // Så får hela tabellen plats utan att man behöver bläddra. Därför visas bara
+  // #, lag, spelade, målskillnad och poäng. Vunna/oavgjorda/förlorade syns när man
+  // håller musen över raden.
+  function byggHalva(lagen) {
+    const tabell = skapa("table", "liga-tabell liga-halv");
+    const huvud = document.createElement("tr");
+    [["#", ""], ["Lag", "lag"], ["S", "Spelade matcher"], ["+/-", "Målskillnad"], ["P", "Poäng"]].forEach(function (par) {
+      const th = skapa("th", par[1] === "lag" ? "lag" : "", par[0]);
+      if (par[1] && par[1] !== "lag") th.title = par[1];
+      huvud.appendChild(th);
     });
-    tr.appendChild(skapa("td", "poang", rad.points));
-    return tr;
-  });
+    tabell.appendChild(huvud);
 
-  await document.fonts.ready;   // typsnittet måste vara laddat innan raderna mäts
-  visaSidor(huvudkort, sidorMedTabell(huvudkort, huvud, rader, "liga-tabell"));
+    lagen.forEach(function (rad) {
+      const tr = document.createElement("tr");
+      tr.appendChild(skapa("td", "", rad.position));
+
+      const lag = skapa("td", "lag");
+      const lagcell = skapa("div", "liga-lagcell");
+      if (rad.team.crest) lagcell.appendChild(skapaLogga(rad.team.crest));
+      lagcell.appendChild(skapa("span", "", rad.team.shortName || rad.team.name));
+      lag.appendChild(lagcell);
+      tr.appendChild(lag);
+
+      tr.appendChild(skapa("td", "", rad.playedGames));
+      tr.appendChild(skapa("td", "", (rad.goalDifference > 0 ? "+" : "") + rad.goalDifference));
+      tr.appendChild(skapa("td", "poang", rad.points));
+
+      // Klick var som helst på raden visar lagets trupp, och musen över visar mer statistik
+      gorTillTruppLank(tr, rad.team);
+      tr.title = (rad.team.shortName || rad.team.name) + ": " + rad.won + " vunna, " + rad.draw +
+        " oavgjorda, " + rad.lost + " förlorade · mål " + rad.goalsFor + "–" + rad.goalsAgainst;
+      tabell.appendChild(tr);
+    });
+    return tabell;
+  }
+
+  const halva = Math.ceil(tabellData.table.length / 2);
+  // Många lag (t.ex. 36 i Champions League) får tätare rader så att alla får plats
+  const kolumner = skapa("div", "liga-tvakolumner" + (halva > 12 ? " manga-lag" : ""));
+  kolumner.appendChild(byggHalva(tabellData.table.slice(0, halva)));
+  kolumner.appendChild(byggHalva(tabellData.table.slice(halva)));
+  huvudkort.appendChild(kolumner);
 }
 
 // ============================================

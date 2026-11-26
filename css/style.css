@@ -1557,6 +1557,80 @@ tr.trupp-lank:hover td.lag span,
 }
 
 /* ============================================
+   LIGATABELLEN I TVÅ KOLUMNER
+   Första halvan av lagen till vänster, resten till höger. Tabellerna fyller
+   höjden och raderna sprids ut jämnt, så att hela tabellen syns utan bläddring.
+   ============================================ */
+.liga-tvakolumner {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.4vw;
+  margin: 1vh 2vw 2vh;
+}
+.liga-halv {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  table-layout: fixed;
+  font-size: clamp(11px, 0.78vw, 15px);
+}
+/* Många lag (Champions League): tätare rader och lite mindre text */
+.manga-lag {
+  margin-top: 0.5vh;
+  margin-bottom: 0.5vh;
+}
+.manga-lag .liga-halv {
+  font-size: clamp(10px, 0.68vw, 13px);
+}
+.manga-lag .liga-halv td {
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.25;
+}
+.manga-lag .liga-halv th {
+  height: 1.6em;
+}
+.manga-lag .liga-lagcell img {
+  width: 1.1em;
+  height: 1.1em;
+}
+.liga-halv th,
+.liga-halv td {
+  padding: 0.2vh 0.2vw;
+}
+.liga-halv th {
+  height: 2em;
+}
+/* Fasta bredder på sifferkolumnerna, laget får resten */
+.liga-halv th:nth-child(1) { width: 2em; }
+.liga-halv th:nth-child(3) { width: 2em; }
+.liga-halv th:nth-child(4) { width: 2.6em; }
+.liga-halv th:nth-child(5) { width: 2.4em; }
+.liga-halv td.lag {
+  display: table-cell;
+}
+.liga-lagcell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.liga-lagcell img {
+  flex-shrink: 0;
+  width: 1.3em;
+  height: 1.3em;
+  object-fit: contain;
+}
+.liga-lagcell span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================
    MOBIL OCH SURFPLATTA (skärmar smalare än 800 px)
    Ligger sist i filen så att den gäller över allt ovanför.
    ============================================ */
@@ -1659,6 +1733,19 @@ tr.trupp-lank:hover td.lag span,
   }
   .sok-truppnat {
     grid-template-columns: 1fr;
+  }
+  /* Ligatabellen: två kolumner blir för smalt, så halvorna läggs under varandra */
+  .liga-tvakolumner {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+    margin: 8px;
+  }
+  .liga-halv {
+    height: auto;
+    font-size: 13px;
+  }
+  .liga-halv td {
+    padding: 6px 3px;
   }
 }
 

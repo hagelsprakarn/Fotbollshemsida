@@ -20,6 +20,37 @@ function lagnamn(lag) {
   return namn;
 }
 
+// Varje matchs rad och mittendel, så att de kan uppdateras utan att listan byggs om.
+// (Raderna på de sidor man inte bläddrat till ligger inte på skärmen, därför sparas de här.)
+const matchrader = new Map();
+
+// Mitten av raden: ställning eller avsparkstid, och under den matchens status:
+// röd LIVE när den pågår, HALVTID i paus, "Slut" när den är färdig
+function fyllMitten(mitten, rad, match) {
+  mitten.replaceChildren();
+  const pagar = match.status === "IN_PLAY" || match.status === "PAUSED";
+  const harResultat = pagar || match.status === "FINISHED";
+
+  mitten.appendChild(skapa("div", "", harResultat
+    ? match.score.fullTime.home + " – " + match.score.fullTime.away
+    : new Date(match.utcDate).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })));
+
+  if (match.status === "IN_PLAY") {
+    const live = skapa("div", "mr-status mr-live");
+    live.appendChild(skapa("span", "mr-livepunkt"));
+    live.appendChild(document.createTextNode("LIVE"));
+    mitten.appendChild(live);
+  } else if (match.status === "PAUSED") {
+    mitten.appendChild(skapa("div", "mr-status mr-halvtid", "HALVTID"));
+  } else if (match.status === "FINISHED") {
+    mitten.appendChild(skapa("div", "mr-status", "Slut"));
+  } else if (match.status === "POSTPONED") {
+    mitten.appendChild(skapa("div", "mr-status", "Uppskjuten"));
+  }
+
+  rad.classList.toggle("live", pagar);
+}
+
 // Bygger en rad för en match. Raden är en länk till matchens egen sida.
 function byggMatchrad(match) {
   const rad = skapa("a", "mr-rad");
@@ -36,18 +67,10 @@ function byggMatchrad(match) {
   }
   hemma.appendChild(lagnamn(match.homeTeam));
 
-  // Mitten: resultat om matchen har börjat, annars avsparkstid
-  const harResultat = ["IN_PLAY", "PAUSED", "FINISHED"].includes(match.status);
-  let mittenText;
-  if (harResultat) {
-    mittenText = match.score.fullTime.home + " – " + match.score.fullTime.away;
-  } else {
-    mittenText = new Date(match.utcDate).toLocaleTimeString("sv-SE", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  }
-  const mitten = skapa("div", "mr-mitten", mittenText);
+  // Mitten: ställning eller avsparkstid, och matchens status
+  const mitten = skapa("div", "mr-mitten");
+  fyllMitten(mitten, rad, match);
+  matchrader.set(match.id, { rad: rad, mitten: mitten });
 
   // Bortalag
   const borta = skapa("div", "mr-lag borta");
@@ -112,9 +135,22 @@ async function visaMatcher() {
   visaSidor(lista, sidor);
 }
 
+// Hämtar dagens matcher igen och uppdaterar ställning och status på raderna
+async function uppdateraMatcher() {
+  if (matchrader.size === 0) return;
+  const data = await hamtaFranApi("/matches?competitions=" + TURNERINGAR);
+  if (!data) return;
+  data.matches.forEach(function (match) {
+    const delar = matchrader.get(match.id);
+    if (delar) fyllMitten(delar.mitten, delar.rad, match);
+  });
+}
+
 const MATCHER_PER_SIDA = 6;
 
 visaMatcher();
+// Uppdatera listan varje minut (lite mer än API-cachens 60 sekunder)
+setInterval(uppdateraMatcher, 65000);
 
 // ============================================
 // SENASTE RESULTATEN (högra rutan)

@@ -1465,3 +1465,49 @@ tr.trupp-lank:hover td.lag span,
     font-size: 11px;
   }
 }
+
+/* ============================================
+   LIVE-MARKERING
+   Pågående matcher: röd LIVE med blinkande prick och röd kant på raden.
+   ============================================ */
+.mr-status {
+  margin-top: 2px;
+  font-size: clamp(9px, 0.65vw, 12px);
+  font-weight: normal;
+  color: var(--farg-text-dampad);
+  letter-spacing: 0.5px;
+}
+.mr-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background-color: #d64545;
+  color: #ffffff;
+}
+.mr-livepunkt {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  animation: live-blink 1.2s ease-in-out infinite;
+}
+@keyframes live-blink {
+  50% { opacity: 0.2; }
+}
+.mr-halvtid {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background-color: #d68a1f;
+  color: #ffffff;
+}
+.mr-rad.live {
+  box-shadow: inset 3px 0 0 #d64545;
+}
+.ma-status.live,
+.re-dag.live {
+  color: #ff6b6b;
+  font-weight: bold;
+}

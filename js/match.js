@@ -73,7 +73,9 @@ function byggHuvud(match, mal) {
         ? match.score.fullTime.home + " – " + match.score.fullTime.away
         : new Date(match.utcDate).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
       mitten.appendChild(skapa("div", "ma-resultat", resultat));
-      mitten.appendChild(skapa("div", "ma-status", statusText(match)));
+      // Pågående match får röd text, samma som LIVE i matchlistan
+      const pagar = match.status === "IN_PLAY" || match.status === "PAUSED";
+      mitten.appendChild(skapa("div", "ma-status" + (pagar ? " live" : ""), statusText(match)));
       rad.appendChild(mitten);
       return;
     }

@@ -275,7 +275,8 @@ function byggOmgangsMatch(match) {
   else nar = new Date(match.utcDate).toLocaleString("sv-SE", {
     weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
   });
-  ruta.appendChild(skapa("div", "re-dag", nar));
+  const pagar = match.status === "IN_PLAY" || match.status === "PAUSED";
+  ruta.appendChild(skapa("div", "re-dag" + (pagar ? " live" : ""), nar));
 
   const malHemma = match.score.fullTime.home;
   const malBorta = match.score.fullTime.away;
